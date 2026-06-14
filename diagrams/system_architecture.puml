@@ -1,0 +1,45 @@
+@startuml SystemArchitecture
+!theme cerulean
+title Software Bug Assistant - System Architecture
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FEFEFE
+
+package "Frontend" {
+    [Web UI\n(Flask)\nlocalhost:5001] as WebUI
+}
+
+package "Hybrid Agent Router" {
+    [QueryClassifier] as QC
+    [HybridAgent] as HA
+}
+
+package "Local Processing" {
+    [LocalGemmaModel\n(Simple Queries)\nNo Tools] as LGM
+    [LocalLLMWithTools\n(Complex Queries)\n12+ Tools\nReAct Loop] as LLT
+}
+
+package "Cloud Processing" {
+    [Cloud Gemini + ADK\n(Gemini 2.0 Flash)\nNative Function Calling] as Cloud
+}
+
+package "Tools Layer" {
+    [MCP Toolbox Server\nlocalhost:5000] as Toolbox
+    [Google Search] as GSearch
+    [StackExchange] as Stack
+}
+
+database "PostgreSQL\ntickets table" as DB
+
+WebUI --> HA : /api/chat
+HA --> QC : classify query
+QC --> LGM : SIMPLE
+QC --> LLT : COMPLEX (try first)
+LLT --> Toolbox : tool calls
+LLT ..> Cloud : fallback
+Cloud --> Toolbox : tool calls
+Cloud --> GSearch
+Cloud --> Stack
+Toolbox --> DB : SQL queries
+
+@enduml

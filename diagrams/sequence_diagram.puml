@@ -1,0 +1,49 @@
+@startuml SequenceDiagram
+!theme cerulean
+title Request Processing Sequence Diagram
+
+actor User
+participant "Web UI\n(Flask)" as UI
+participant "HybridAgent" as HA
+participant "QueryClassifier" as QC
+participant "LocalGemmaModel" as LGM
+participant "LocalLLMWithTools" as LLT
+participant "Cloud Gemini" as Cloud
+participant "MCP Toolbox" as TB
+database "PostgreSQL" as DB
+
+User -> UI : Send message
+UI -> HA : process_query(message)
+HA -> QC : is_simple(query)
+
+alt SIMPLE Query
+    QC --> HA : True
+    HA -> LGM : generate(prompt)
+    LGM --> HA : response
+    HA --> UI : {handled_locally: true}
+    
+else COMPLEX Query
+    QC --> HA : False
+    HA --> UI : {handled_locally: false}
+    
+    UI -> LLT : chat(message)
+    LLT -> LLT : ReAct Loop
+    LLT -> TB : execute tool
+    TB -> DB : SQL query
+    DB --> TB : results
+    TB --> LLT : tool result
+    LLT --> UI : formatted response
+    
+    alt LocalLLMWithTools fails
+        UI -> Cloud : run_async(message)
+        Cloud -> TB : execute tool
+        TB -> DB : SQL query
+        DB --> TB : results
+        TB --> Cloud : tool result
+        Cloud --> UI : response
+    end
+end
+
+UI --> User : Display response
+
+@enduml

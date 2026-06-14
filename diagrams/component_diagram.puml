@@ -1,0 +1,32 @@
+@startuml ComponentDiagram
+!theme cerulean
+title Component Diagram
+
+package "software_bug_assistant" {
+    component [__init__.py] as Init
+    component [agent.py\nADK Agent] as Agent
+    component [hybrid_agent.py\nQueryClassifier\nLocalGemmaModel\nHybridAgent] as Hybrid
+    component [prompt.py\nagent_instruction] as Prompt
+    
+    package "tools" {
+        component [tools.py\nCloud Tools] as CloudTools
+        component [local_llm.py\nHybridLLM] as LocalLLM
+        component [local_tools.py\nLocalLLMWithTools\nToolRegistry\nToolCallParser] as LocalTools
+    }
+}
+
+component [web_ui.py\nFlask App] as WebUI
+component [MCP Toolbox] as Toolbox
+database [PostgreSQL] as DB
+
+WebUI --> Hybrid
+WebUI --> LocalTools
+WebUI --> Agent
+Agent --> Prompt
+Agent --> CloudTools
+Hybrid --> Prompt
+LocalTools --> Toolbox
+CloudTools --> Toolbox
+Toolbox --> DB
+
+@enduml
