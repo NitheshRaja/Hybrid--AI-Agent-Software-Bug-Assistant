@@ -1,0 +1,45 @@
+@startuml QueryFlowchart
+title Query Processing Flowchart
+skinparam arrowMessageAlignment center
+
+start
+:User Query;
+
+:QueryClassifier\nPattern Matching;
+
+if (Query Type?) then (   SIMPLE   )
+    :LocalGemmaModel.generate();
+    :Return Response;
+else (   COMPLEX   )
+    partition "Local ReAct Loop" {
+        :LocalLLMWithTools.chat();
+        :Identify Tool Call\n(e.g., search_tickets);
+        :Execute Tool via MCP Toolbox;
+        :PostgreSQL Database;
+    }
+    
+    if (Success?) then (   YES   )
+        :Format Tool Results;
+        :Return Response;
+    else (   NO   )
+        :Try Cloud Gemini + ADK;
+        
+        if (Success?) then (   YES   )
+            :Return Cloud Response;
+        else (   NO - Quota Error   )
+            :query_database_directly();
+            :PostgreSQL Database;
+            
+            if (DB Result?) then (   YES   )
+                :Return DB Fallback;
+            else (   NO   )
+                :Return Error Message;
+            endif
+        endif
+    endif
+endif
+
+:JSON Response to Web UI;
+stop
+
+@enduml

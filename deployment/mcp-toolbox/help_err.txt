@@ -1,0 +1,6 @@
+panic: Unexpected Error: failed to read a prebuilt tool open tools\alloydb-postgres.yaml: file does not exist
+	
+
+goroutine 1 [running]:
+github.com/googleapis/genai-toolbox/internal/prebuiltconfigs.init.0()
+	/workspace/internal/prebuiltconfigs/prebuiltconfigs.go:38 +0xb4

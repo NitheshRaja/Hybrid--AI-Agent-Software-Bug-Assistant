@@ -1,0 +1,35 @@
+@startuml UseCaseDiagram
+!theme cerulean
+title Use Case Diagram
+
+left to right direction
+
+actor "User" as U
+actor "IT Support" as IT
+
+rectangle "Software Bug Assistant" {
+    usecase "View Open Tickets" as UC1
+    usecase "Search Tickets by Priority" as UC2
+    usecase "Create New Ticket" as UC3
+    usecase "Update Ticket Status" as UC4
+    usecase "Search Similar Tickets" as UC5
+    usecase "Get Troubleshooting Help" as UC6
+    usecase "Ask General Questions" as UC7
+    usecase "Search Web for Solutions" as UC8
+}
+
+U --> UC1
+U --> UC2
+U --> UC3
+U --> UC5
+U --> UC6
+U --> UC7
+
+IT --> UC1
+IT --> UC2
+IT --> UC3
+IT --> UC4
+IT --> UC5
+IT --> UC8
+
+@enduml

@@ -1,0 +1,31 @@
+@startuml DatabaseER
+!theme cerulean
+title Database ER Diagram - tickets table
+
+entity "tickets" as T {
+    * ticket_id : SERIAL <<PK>>
+    --
+    * title : VARCHAR(255)
+    description : TEXT
+    assignee : VARCHAR(100)
+    priority : VARCHAR(50)
+    status : VARCHAR(50)
+    creation_time : TIMESTAMP
+    updated_time : TIMESTAMP
+}
+
+note right of T
+    Priority Values:
+    - P0 - Critical
+    - P1 - High
+    - P2 - Medium
+    - P3 - Low
+    
+    Status Values:
+    - Open
+    - In Progress
+    - Closed
+    - Resolved
+end note
+
+@enduml
