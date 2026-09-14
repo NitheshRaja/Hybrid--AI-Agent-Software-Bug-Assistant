@@ -4,17 +4,26 @@ import psycopg
 from psycopg.rows import dict_row
 
 def _get_db_conn():
+    # Direct connection string (common in Supabase / Neon / Heroku / HF)
+    db_url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL") or os.getenv("SUPABASE_DB_URL")
+    if db_url:
+        return psycopg.connect(db_url, row_factory=dict_row, connect_timeout=5)
+
     db_host = os.getenv("DB_HOST")
     db_port = int(os.getenv("DB_PORT", "5432"))
     db_name = os.getenv("DB_NAME", "postgres")
     db_user = os.getenv("DB_USER", "postgres")
-    db_pass = os.getenv("DB_PASS")
+    db_pass = os.getenv("DB_PASS") or os.getenv("DB_PASSWORD")
     
     if not db_host:
-        raise Exception("DB_HOST environment variable not set. Please add DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT as HuggingFace Space secrets.")
+        raise Exception("Database configuration missing: DB_HOST (or DATABASE_URL) environment variable is not set in Space secrets.")
     
-    # Build connection string — Supabase requires sslmode=require
-    conninfo = f"host={db_host} port={db_port} dbname={db_name} user={db_user} password={db_pass} sslmode=require"
+    # Supabase / cloud DBs need SSL, local dev usually doesn't
+    sslmode = os.getenv("DB_SSLMODE")
+    if not sslmode:
+        sslmode = "disable" if db_host in ("127.0.0.1", "localhost") else "require"
+    
+    conninfo = f"host={db_host} port={db_port} dbname={db_name} user={db_user} password={db_pass} sslmode={sslmode} connect_timeout=5"
     
     return psycopg.connect(
         conninfo,

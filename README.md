@@ -1,4 +1,15 @@
+---
+title: Software Bug Assistant
+emoji: 🐛
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🐛 IntelliBug AI — Hybrid AI Bug Management System
+
 
 <div align="center">
 

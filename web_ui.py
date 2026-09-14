@@ -2466,9 +2466,7 @@ Your free tier daily limit has been reached. Don't worry - here's what's happeni
 Try clicking the **Quick Actions** buttons on the left sidebar!"""
                 
                 elif "credentials" in error_msg.lower() or "auth" in error_msg.lower():
-                    fallback_msg = "Cloud Gemini requires API credentials. Please check your .env file has GOOGLE_API_KEY set."
-                elif "toolbox" in error_msg.lower() or "mcp" in error_msg.lower() or "5000" in error_msg:
-                    fallback_msg = "Cloud Gemini needs MCP Toolbox server running. Please start it:\ncd deployment/mcp-toolbox\n./toolbox.exe --tools-file=tools.yaml"
+                    fallback_msg = "Cloud Gemini requires API credentials. Please check your Space secrets or .env file has GOOGLE_API_KEY set."
                 else:
                     # For other errors, try local LLM with tools first, then direct DB, then simple local model
                     print("Cloud error, attempting local fallback...")
@@ -2517,7 +2515,7 @@ Try clicking the **Quick Actions** buttons on the left sidebar!"""
                         except Exception as local_err:
                             print(f"Local fallback also failed: {local_err}")
                     
-                    fallback_msg = f"Cloud Gemini processing failed: {error_msg}\n\nPlease check:\n1. MCP Toolbox is running on port 5000\n2. .env has GOOGLE_API_KEY\n3. Database is accessible"
+                    fallback_msg = f"Cloud Gemini processing failed: {error_msg}\n\nPlease check:\n1. Space Secrets have DB_HOST, DB_USER, DB_PASS (or DATABASE_URL)\n2. Space Secrets have GOOGLE_API_KEY\n3. Database is accessible"
                 
                 return jsonify({
                     "response": fallback_msg,
@@ -2569,7 +2567,7 @@ if __name__ == '__main__':
     if adk_agent:
         print("✓ Cloud Gemini + Tools: READY")
     else:
-        print("⚠ Cloud Gemini: NOT AVAILABLE (check MCP Toolbox and .env)")
+        print("⚠ Cloud Gemini: NOT AVAILABLE (check GOOGLE_API_KEY and .env)")
     
     print()
     port = int(os.environ.get("PORT", 7860))
