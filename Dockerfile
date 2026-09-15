@@ -18,8 +18,10 @@ ADD . /app
 # - torch: CPU-only wheel (avoids ~2GB of CUDA packages)
 RUN uv sync --no-install-project --no-dev
 
+# Pre-download Gemma-2B GGUF model during build so Local LLM is available immediately at startup
+RUN uv run python download_gemma.py
+
 ENV PORT=7860
 EXPOSE 7860
 
-# Launch the app immediately; the Gemma download will run in the background
 CMD ["sh", "-c", "uv run python web_ui.py"]

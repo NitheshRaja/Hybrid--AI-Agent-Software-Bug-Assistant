@@ -33,20 +33,81 @@ from software_bug_assistant.tools.local_tools import (
     search_google,
 )
 from software_bug_assistant.hybrid_agent import HybridAgent, classify_query
+import threading
+from pathlib import Path
 
-# Import local LLM with tool calling (Option B - full tool calling)
+# Local LLM with tool calling and model loader
 local_llm_with_tools = None
-try:
-    from software_bug_assistant.tools.local_tools import get_local_llm_with_tools
-    local_llm_with_tools = get_local_llm_with_tools()
-    if local_llm_with_tools and local_llm_with_tools.is_available():
-        print("✓ Local LLM with Tool Calling: READY")
-    else:
-        print("⚠ Local LLM with Tool Calling: Model not loaded")
-        local_llm_with_tools = None
-except Exception as e:
-    print(f"⚠ Local LLM with tools not available: {e}")
-    local_llm_with_tools = None
+_model_downloading = False
+
+def init_local_models():
+    """Attempt to load Local LLM and Local LLM with tools, downloading if needed in background"""
+    global hybrid_agent, local_llm_with_tools, _model_downloading
+    model_path = Path("models") / "gemma-2-2b-it-Q4_K_M.gguf"
+    
+    if not model_path.exists():
+        if _model_downloading:
+            return
+        _model_downloading = True
+        def _download_task():
+            global _model_downloading, hybrid_agent, local_llm_with_tools
+            print("⏳ Gemma model not found. Starting background download (~1.5GB)...")
+            try:
+                from download_gemma import download_gemma_model
+                download_gemma_model()
+            except Exception as dl_err:
+                print(f"⚠ Background Gemma download failed: {dl_err}")
+                _model_downloading = False
+                return
+            _model_downloading = False
+            
+            if model_path.exists():
+                print("Loading Gemma-2B models into memory...")
+                try:
+                    from software_bug_assistant.tools.local_tools import get_local_llm_with_tools
+                    local_llm_with_tools = get_local_llm_with_tools()
+                    if local_llm_with_tools and local_llm_with_tools.is_available():
+                        print("✓ Local LLM with Tool Calling: READY")
+                except Exception as e:
+                    print(f"⚠ Local LLM with tools init error: {e}")
+
+                if hybrid_agent:
+                    try:
+                        from software_bug_assistant.hybrid_agent import LocalGemmaModel
+                        if hybrid_agent.local_model is None or not hybrid_agent.local_model.is_available():
+                            hybrid_agent.local_model = LocalGemmaModel()
+                            if hybrid_agent.local_model.is_available():
+                                print("✓ Local Gemma-2B: READY")
+                    except Exception as e:
+                        print(f"⚠ Local Gemma model init error: {e}")
+                        
+        threading.Thread(target=_download_task, daemon=True).start()
+        return
+
+    # If model file already exists on disk (e.g. pre-downloaded in Docker image):
+    if local_llm_with_tools is None:
+        try:
+            from software_bug_assistant.tools.local_tools import get_local_llm_with_tools
+            local_llm_with_tools = get_local_llm_with_tools()
+            if local_llm_with_tools and local_llm_with_tools.is_available():
+                print("✓ Local LLM with Tool Calling: READY")
+            else:
+                local_llm_with_tools = None
+        except Exception as e:
+            print(f"⚠ Local LLM with tools not available: {e}")
+            local_llm_with_tools = None
+
+    if hybrid_agent and (hybrid_agent.local_model is None or not hybrid_agent.local_model.is_available()):
+        try:
+            from software_bug_assistant.hybrid_agent import LocalGemmaModel
+            hybrid_agent.local_model = LocalGemmaModel()
+            if hybrid_agent.local_model.is_available():
+                print("✓ Local Gemma-2B: READY")
+        except Exception as e:
+            print(f"⚠ Local Gemma model init error: {e}")
+
+# Kick off model initialization
+init_local_models()
 
 # Initialize direct database access functions (replaces MCP Toolbox)
 from software_bug_assistant.tools.db_tools import (
@@ -639,6 +700,11 @@ HTML_TEMPLATE = """
         .status-dot.offline {
             background: var(--danger);
             box-shadow: 0 0 12px var(--danger);
+        }
+        
+        .status-dot.loading {
+            background: #f59e0b;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.7);
         }
         
         @keyframes pulse {
@@ -1636,11 +1702,23 @@ HTML_TEMPLATE = """
             fetch('/api/status')
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('localDot').className = 
-                        'status-dot' + (data.local_available ? '' : ' offline');
+                    const localDot = document.getElementById('localDot');
+                    const localBadge = document.querySelector('.status-badge.local');
+                    if (data.local_available) {
+                        localDot.className = 'status-dot';
+                        if (localBadge) localBadge.textContent = 'Gemma-2B';
+                    } else if (data.local_downloading) {
+                        localDot.className = 'status-dot loading';
+                        if (localBadge) localBadge.textContent = 'Loading...';
+                    } else {
+                        localDot.className = 'status-dot offline';
+                        if (localBadge) localBadge.textContent = 'Offline';
+                    }
+                    
                     document.getElementById('cloudDot').className = 
                         'status-dot' + (data.cloud_available ? '' : ' offline');
-                });
+                })
+                .catch(err => console.log('Status refresh error:', err));
         }
         
         function addMessage(text, isUser, modelUsed = null, imageUrl = null) {
@@ -1847,6 +1925,7 @@ HTML_TEMPLATE = """
 
         loadChatState();
         refreshStatus();
+        setInterval(refreshStatus, 4000);
     </script>
 </body>
 </html>
@@ -1912,20 +1991,21 @@ def init_agents():
 @app.route('/api/status', methods=['GET'])
 def get_status():
     """Get status of local and cloud models"""
-    global hybrid_agent, adk_agent
+    global hybrid_agent, adk_agent, local_llm_with_tools, _model_downloading
     
     init_agents()
+    init_local_models()
     
     local_available = (
-        hybrid_agent is not None and
-        hybrid_agent.local_model is not None and 
-        hybrid_agent.local_model.is_available()
+        (hybrid_agent is not None and hybrid_agent.local_model is not None and hybrid_agent.local_model.is_available()) or
+        (local_llm_with_tools is not None and local_llm_with_tools.is_available())
     )
     
     cloud_available = adk_agent is not None
     
     return jsonify({
         "local_available": local_available,
+        "local_downloading": _model_downloading,
         "cloud_available": cloud_available
     })
 
@@ -1933,10 +2013,11 @@ def get_status():
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """Handle chat messages and route to appropriate model"""
-    global hybrid_agent, adk_agent
+    global hybrid_agent, adk_agent, local_llm_with_tools, _model_downloading
     
     # Initialize agents if needed
     init_agents()
+    init_local_models()
     
     if hybrid_agent is None:
         return jsonify({
@@ -1963,7 +2044,6 @@ def chat():
     force_cloud = False
     if message.lower().startswith('@cloud'):
         force_cloud = True
-        # Accept forms like: @cloud question, @cloud: question, @cloud
         message = re.sub(r'^@cloud\s*:?', '', message, flags=re.IGNORECASE).strip()
         if not message:
             return jsonify({
@@ -1973,6 +2053,20 @@ def chat():
                 "error": True,
             })
         print(f"🌩️ Force Cloud Gemini requested for: {message}")
+
+    # Check for @local prefix to force Local Gemma-2B
+    force_local = False
+    if message.lower().startswith('@local'):
+        force_local = True
+        message = re.sub(r'^@local\s*:?', '', message, flags=re.IGNORECASE).strip()
+        if not message:
+            return jsonify({
+                "response": "Please add a query after @local, for example: @local how to troubleshoot slow queries",
+                "model_used": "gemma-2b-local",
+                "classification": "FORCED_LOCAL",
+                "error": True,
+            })
+        print(f"🏠 Force Local Gemma requested for: {message}")
 
     if image_bytes is not None:
         force_cloud = True
@@ -2045,6 +2139,47 @@ def chat():
             "response": "What problem should I fix? Please describe the issue (symptoms, error text, when it happens).",
             "model_used": "triage",
             "classification": "NEED_DETAILS"
+        })
+
+    # If user explicitly requested @local, handle exclusively with local model/tools
+    if force_local:
+        if local_llm_with_tools and local_llm_with_tools.is_available():
+            try:
+                local_tool_response = local_llm_with_tools.chat(message)
+                if local_tool_response and local_tool_response.strip():
+                    return jsonify({
+                        "response": local_tool_response,
+                        "model_used": "gemma-2b-tools",
+                        "classification": "FORCED_LOCAL"
+                    })
+            except Exception as e:
+                print(f"Force local tools error: {e}")
+
+        if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
+            try:
+                local_response = hybrid_agent.local_model.generate(message, context=context)
+                if local_response and local_response.strip():
+                    return jsonify({
+                        "response": local_response,
+                        "model_used": "gemma-2b-local",
+                        "classification": "FORCED_LOCAL"
+                    })
+            except Exception as e:
+                print(f"Force local model error: {e}")
+
+        if _model_downloading:
+            return jsonify({
+                "response": "⏳ **Local Gemma-2B is currently downloading in the background (~1.5GB).**\n\nPlease wait a moment for the download to complete, or ask without `@local` to use Cloud Gemini in the meantime.",
+                "model_used": "offline",
+                "classification": "FORCED_LOCAL",
+                "error": True
+            })
+
+        return jsonify({
+            "response": "⚠️ Local Gemma-2B model is not available right now. Please try again in a few moments, or ask without `@local` to use Cloud Gemini.",
+            "model_used": "offline",
+            "classification": "FORCED_LOCAL",
+            "error": True
         })
 
     if not _is_ticket_query(message_lower):
