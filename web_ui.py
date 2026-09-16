@@ -2149,6 +2149,27 @@ def chat():
 
     # If user explicitly requested @local, handle exclusively with local model/tools
     if force_local:
+        if QueryClassifier.is_simple(message) and hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
+            try:
+                local_response = hybrid_agent.local_model.generate(message, max_tokens=120, context=context)
+                if local_response and local_response.strip():
+                    return jsonify({
+                        "response": local_response,
+                        "model_used": "gemma-2b-local",
+                        "classification": "FORCED_LOCAL"
+                    })
+            except Exception as e:
+                print(f"Force local simple model error: {e}")
+
+        # Check direct database for ticket queries
+        db_result = query_database_directly(message)
+        if db_result:
+            return jsonify({
+                "response": db_result,
+                "model_used": "gemma-2b-tools",
+                "classification": "FORCED_LOCAL"
+            })
+
         if local_llm_with_tools and local_llm_with_tools.is_available():
             try:
                 local_tool_response = local_llm_with_tools.chat(message)
@@ -2163,7 +2184,7 @@ def chat():
 
         if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
             try:
-                local_response = hybrid_agent.local_model.generate(message, context=context)
+                local_response = hybrid_agent.local_model.generate(message, max_tokens=120, context=context)
                 if local_response and local_response.strip():
                     return jsonify({
                         "response": local_response,
