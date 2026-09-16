@@ -30,7 +30,6 @@ from software_bug_assistant.tools.local_tools import (
     backfill_missing_embeddings,
     get_ticket_creator,
     query_stackexchange,
-    search_google,
 )
 from software_bug_assistant.hybrid_agent import HybridAgent, QueryClassifier, classify_query
 import threading
@@ -2250,55 +2249,17 @@ def chat():
     state["last_issue"] = issue_text
     ask_fix_confirmation = _is_troubleshoot_request(message_lower)
 
-    if adk_agent is None:
-        if force_cloud:
-            return jsonify({
-                "response": "@cloud was requested, but Cloud Gemini is not available right now. Check API key/network and try again.",
-                "model_used": "gemini-cloud",
-                "classification": "FORCED_CLOUD",
-                "error": True,
-            })
-        if local_llm_with_tools and local_llm_with_tools.is_available():
-            try:
-                local_tool_response = local_llm_with_tools.chat(issue_text)
-                response_text = local_tool_response or ""
-                response_text = response_text.strip() or "I can help, but I need more details about the issue."
-                if ask_fix_confirmation:
-                    response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
-                    state["stage"] = "awaiting_fix_confirmation"
-                return jsonify({
-                    "response": response_text,
-                    "model_used": "gemma-2b-tools",
-                    "classification": "TRIAGE"
-                })
-            except Exception as local_err:
-                print(f"Local LLM with tools failed: {local_err}")
-            if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
-                try:
-                    local_response = hybrid_agent.local_model.generate(issue_text)
-                    response_text = local_response or ""
-                except Exception:
-                    response_text = "I need more details about the issue to help you."
-            else:
-                response_text = "I'm currently offline. Please share the issue details and try again later."
+    # If user explicitly requested @cloud, but Cloud Gemini is not configured/available
+    if force_cloud and adk_agent is None:
+        return jsonify({
+            "response": "@cloud was requested, but Cloud Gemini is not available right now. Check API key/network and try again.",
+            "model_used": "gemini-cloud",
+            "classification": "FORCED_CLOUD",
+            "error": True,
+        })
 
-            google = search_google(issue_text)
-            stack = query_stackexchange(issue_text)
-            google_section = _format_search_section("🔍 Web Search Results", google.get("results", []))
-            stack_section = _format_search_section("📚 StackOverflow Related Issues", stack.get("results", []))
-            extra_sections = "\n\n".join([s for s in [google_section, stack_section] if s])
-            if extra_sections:
-                response_text += "\n\n---\n\n" + extra_sections
-
-            if ask_fix_confirmation:
-                response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
-                state["stage"] = "awaiting_fix_confirmation"
-            return jsonify({
-                "response": response_text,
-                "model_used": "offline",
-                "classification": "TRIAGE"
-            })
-
+    # Try Cloud Gemini first when available
+    if adk_agent is not None:
         try:
             import asyncio
             import uuid
@@ -2360,39 +2321,92 @@ def chat():
                 else:
                     raise
 
-            response_text = response_text or "I can help, but I need more details about the issue."
+            if response_text and response_text.strip():
+                response_text = response_text.strip()
+                try:
+                    stack = query_stackexchange(issue_text)
+                    stack_section = _format_search_section("📚 StackOverflow Related Issues", stack.get("results", []))
+                    if stack_section:
+                        response_text += "\n\n---\n\n" + stack_section
+                except Exception as search_err:
+                    print(f"StackExchange search skipped: {search_err}")
 
-            try:
-                stack = query_stackexchange(issue_text)
-                stack_section = _format_search_section("📚 StackOverflow Related Issues", stack.get("results", []))
-                if stack_section:
-                    response_text += "\n\n---\n\n" + stack_section
-            except Exception as search_err:
-                print(f"StackExchange search skipped: {search_err}")
+                if ask_fix_confirmation:
+                    response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
+                    state["stage"] = "awaiting_fix_confirmation"
 
-            if ask_fix_confirmation:
-                response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
-                state["stage"] = "awaiting_fix_confirmation"
-            return jsonify({
-                "response": response_text,
-                "model_used": "gemini-cloud",
-                "classification": "TRIAGE"
-            })
+                return jsonify({
+                    "response": response_text,
+                    "model_used": "gemini-cloud",
+                    "classification": "FORCED_CLOUD" if force_cloud else "TRIAGE"
+                })
+
         except Exception as e:
             print(f"Cloud triage error: {e}")
             traceback.print_exc()
-            response_text = (
-                "Cloud analysis failed for this request. I can still help if you share the exact error text "
-                "or retry with @cloud and a smaller/clearer image."
-            )
+            if force_cloud:
+                return jsonify({
+                    "response": f"Cloud analysis failed: {e}. Please retry or ask without `@cloud` to use the local Gemma model.",
+                    "model_used": "gemini-cloud",
+                    "classification": "FORCED_CLOUD",
+                    "error": True
+                })
+            print("Falling back to local models after cloud failure...")
+
+    # Fallback to local models (when cloud is unavailable or failed)
+    if local_llm_with_tools and local_llm_with_tools.is_available():
+        try:
+            local_tool_response = local_llm_with_tools.chat(issue_text)
+            response_text = local_tool_response or ""
+            response_text = response_text.strip() or "I can help, but I need more details about the issue."
             if ask_fix_confirmation:
                 response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
                 state["stage"] = "awaiting_fix_confirmation"
             return jsonify({
                 "response": response_text,
-                "model_used": "error",
+                "model_used": "gemma-2b-tools",
                 "classification": "TRIAGE"
             })
+        except Exception as local_err:
+            print(f"Local LLM with tools fallback failed: {local_err}")
+
+    if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
+        try:
+            local_response = hybrid_agent.local_model.generate(issue_text, max_tokens=256, context=context)
+            if local_response and local_response.strip():
+                response_text = local_response.strip()
+                if ask_fix_confirmation:
+                    response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
+                    state["stage"] = "awaiting_fix_confirmation"
+                return jsonify({
+                    "response": response_text,
+                    "model_used": "gemma-2b-local",
+                    "classification": "TRIAGE"
+                })
+        except Exception as local_err:
+            print(f"Local model fallback failed: {local_err}")
+
+    # Final offline fallback if neither cloud nor local model could respond
+    response_text = (
+        "I'm currently unable to reach the AI models. Please check your connection or provide more details."
+    )
+    try:
+        stack = query_stackexchange(issue_text)
+        stack_section = _format_search_section("📚 StackOverflow Related Issues", stack.get("results", []))
+        if stack_section:
+            response_text += "\n\n---\n\n" + stack_section
+    except Exception as search_err:
+        print(f"StackExchange search skipped: {search_err}")
+
+    if ask_fix_confirmation:
+        response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
+        state["stage"] = "awaiting_fix_confirmation"
+
+    return jsonify({
+        "response": response_text,
+        "model_used": "offline",
+        "classification": "TRIAGE"
+    })
 
 
 if __name__ == '__main__':
