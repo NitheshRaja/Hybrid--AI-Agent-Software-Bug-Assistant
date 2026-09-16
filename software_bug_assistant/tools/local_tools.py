@@ -1176,15 +1176,16 @@ class LocalLLMWithTools:
     Implements a ReAct-style reasoning loop.
     """
     
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: Optional[str] = None, model=None):
         from pathlib import Path
         MODEL_DIR = Path(__file__).parent.parent.parent / "models"
         GEMMA_MODEL = MODEL_DIR / "gemma-2-2b-it-Q4_K_M.gguf"
         
-        self.model = None
+        self.model = model
         self.model_path = model_path or str(GEMMA_MODEL)
         self.tool_registry = ToolRegistry()
-        self._load_model()
+        if self.model is None:
+            self._load_model()
     
     def _load_model(self):
         """Load the Gemma model"""
@@ -1194,12 +1195,12 @@ class LocalLLMWithTools:
         
         try:
             from llama_cpp import Llama
-            
+            threads = min(4, os.cpu_count() or 2)
             print("Loading Gemma-2B with tool calling support...")
             self.model = Llama(
                 model_path=self.model_path,
-                n_ctx=4096,
-                n_threads=4,
+                n_ctx=2048,
+                n_threads=threads,
                 n_gpu_layers=0,
                 verbose=False
             )

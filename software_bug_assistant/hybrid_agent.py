@@ -110,9 +110,10 @@ class QueryClassifier:
 class LocalGemmaModel:
     """Local Gemma-2B model wrapper"""
     
-    def __init__(self):
-        self.model = None
-        self._load_model()
+    def __init__(self, model=None):
+        self.model = model
+        if self.model is None:
+            self._load_model()
     
     def _load_model(self):
         """Load Gemma-2B model"""
@@ -123,12 +124,14 @@ class LocalGemmaModel:
         
         try:
             from llama_cpp import Llama
+            import os
             
+            threads = min(4, os.cpu_count() or 2)
             print("Loading Gemma-2B for simple queries...")
             self.model = Llama(
                 model_path=str(GEMMA_MODEL),
                 n_ctx=2048,
-                n_threads=4,
+                n_threads=threads,
                 n_gpu_layers=0,
                 verbose=False
             )
@@ -287,12 +290,20 @@ class HybridAgent:
     4. Complex → Pass to ADK agent (Gemini + tools)
     """
     
-    def __init__(self, enable_local: bool = True):
-        self.local_model = None
+    def __init__(self, enable_local: bool = True, local_model: Optional[LocalGemmaModel] = None):
+        self.local_model = local_model
         self.enable_local = enable_local
         
-        if enable_local:
-            self.local_model = LocalGemmaModel()
+        if enable_local and self.local_model is None:
+            # Check if local_tools has already loaded the model to avoid duplicate memory allocation
+            try:
+                from .tools.local_tools import _local_llm_with_tools
+                if _local_llm_with_tools and _local_llm_with_tools.model:
+                    self.local_model = LocalGemmaModel(model=_local_llm_with_tools.model)
+            except Exception:
+                pass
+            if self.local_model is None:
+                self.local_model = LocalGemmaModel()
     
     def process_query(self, query: str, context: Optional[dict] = None) -> dict:
         """

@@ -36,55 +36,20 @@ from software_bug_assistant.hybrid_agent import HybridAgent, classify_query
 import threading
 from pathlib import Path
 
-# Local LLM with tool calling and model loader
+# Application and Agent globals
+app = Flask(__name__)
+hybrid_agent = None
+adk_agent = None
 local_llm_with_tools = None
 _model_downloading = False
+conversation_state = {}
+embedding_backfill_attempted = False
+_model_init_lock = threading.Lock()
 
-def init_local_models():
-    """Attempt to load Local LLM and Local LLM with tools, downloading if needed in background"""
-    global hybrid_agent, local_llm_with_tools, _model_downloading
-    model_path = Path("models") / "gemma-2-2b-it-Q4_K_M.gguf"
+def _load_local_instances():
+    """Load local LLM with tools and hybrid agent sharing a single model in memory"""
+    global hybrid_agent, local_llm_with_tools
     
-    if not model_path.exists():
-        if _model_downloading:
-            return
-        _model_downloading = True
-        def _download_task():
-            global _model_downloading, hybrid_agent, local_llm_with_tools
-            print("⏳ Gemma model not found. Starting background download (~1.5GB)...")
-            try:
-                from download_gemma import download_gemma_model
-                download_gemma_model()
-            except Exception as dl_err:
-                print(f"⚠ Background Gemma download failed: {dl_err}")
-                _model_downloading = False
-                return
-            _model_downloading = False
-            
-            if model_path.exists():
-                print("Loading Gemma-2B models into memory...")
-                try:
-                    from software_bug_assistant.tools.local_tools import get_local_llm_with_tools
-                    local_llm_with_tools = get_local_llm_with_tools()
-                    if local_llm_with_tools and local_llm_with_tools.is_available():
-                        print("✓ Local LLM with Tool Calling: READY")
-                except Exception as e:
-                    print(f"⚠ Local LLM with tools init error: {e}")
-
-                if hybrid_agent:
-                    try:
-                        from software_bug_assistant.hybrid_agent import LocalGemmaModel
-                        if hybrid_agent.local_model is None or not hybrid_agent.local_model.is_available():
-                            hybrid_agent.local_model = LocalGemmaModel()
-                            if hybrid_agent.local_model.is_available():
-                                print("✓ Local Gemma-2B: READY")
-                    except Exception as e:
-                        print(f"⚠ Local Gemma model init error: {e}")
-                        
-        threading.Thread(target=_download_task, daemon=True).start()
-        return
-
-    # If model file already exists on disk (e.g. pre-downloaded in Docker image):
     if local_llm_with_tools is None:
         try:
             from software_bug_assistant.tools.local_tools import get_local_llm_with_tools
@@ -97,14 +62,56 @@ def init_local_models():
             print(f"⚠ Local LLM with tools not available: {e}")
             local_llm_with_tools = None
 
-    if hybrid_agent and (hybrid_agent.local_model is None or not hybrid_agent.local_model.is_available()):
-        try:
-            from software_bug_assistant.hybrid_agent import LocalGemmaModel
-            hybrid_agent.local_model = LocalGemmaModel()
-            if hybrid_agent.local_model.is_available():
-                print("✓ Local Gemma-2B: READY")
-        except Exception as e:
-            print(f"⚠ Local Gemma model init error: {e}")
+    try:
+        from software_bug_assistant.hybrid_agent import HybridAgent, LocalGemmaModel
+        shared_model = local_llm_with_tools.model if local_llm_with_tools else None
+        if hybrid_agent is None:
+            local_gemma = LocalGemmaModel(model=shared_model)
+            hybrid_agent = HybridAgent(enable_local=True, local_model=local_gemma)
+        elif hybrid_agent.local_model is None or not hybrid_agent.local_model.is_available():
+            hybrid_agent.local_model = LocalGemmaModel(model=shared_model)
+            
+        if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
+            print("✓ Local Gemma-2B: READY")
+    except Exception as e:
+        print(f"⚠ Local Gemma model init error: {e}")
+
+
+def init_local_models():
+    """Attempt to load Local LLM and Local LLM with tools, sharing model instance and downloading in background if needed"""
+    global hybrid_agent, local_llm_with_tools, _model_downloading
+    
+    # Fast path if already loaded
+    if local_llm_with_tools is not None and hybrid_agent is not None and hybrid_agent.local_model is not None and hybrid_agent.local_model.is_available():
+        return
+
+    with _model_init_lock:
+        model_path = Path("models") / "gemma-2-2b-it-Q4_K_M.gguf"
+        
+        if not model_path.exists():
+            if _model_downloading:
+                return
+            _model_downloading = True
+            def _download_task():
+                global _model_downloading, hybrid_agent, local_llm_with_tools
+                print("⏳ Gemma model not found. Starting background download (~1.5GB)...")
+                try:
+                    from download_gemma import download_gemma_model
+                    download_gemma_model()
+                except Exception as dl_err:
+                    print(f"⚠ Background Gemma download failed: {dl_err}")
+                    _model_downloading = False
+                    return
+                _model_downloading = False
+                
+                if model_path.exists():
+                    _load_local_instances()
+                            
+            threading.Thread(target=_download_task, daemon=True).start()
+            return
+
+        # Model file already exists on disk (pre-downloaded in Docker image)
+        _load_local_instances()
 
 # Kick off model initialization
 init_local_models()
@@ -194,11 +201,7 @@ def query_database_directly(query: str) -> Optional[str]:
         return None
 
 
-app = Flask(__name__)
-hybrid_agent = None
-adk_agent = None
-conversation_state = {}
-embedding_backfill_attempted = False
+
 
 
 def _get_client_state(client_id: str) -> dict:
@@ -1950,7 +1953,10 @@ def init_agents():
     # Initialize hybrid agent (for local Gemma)
     if hybrid_agent is None:
         try:
-            hybrid_agent = HybridAgent(enable_local=True)
+            from software_bug_assistant.hybrid_agent import HybridAgent, LocalGemmaModel
+            shared_model = local_llm_with_tools.model if local_llm_with_tools else None
+            local_gemma = LocalGemmaModel(model=shared_model)
+            hybrid_agent = HybridAgent(enable_local=True, local_model=local_gemma)
         except Exception as e:
             print(f"Warning: Hybrid agent init failed: {e}")
 
@@ -2182,12 +2188,56 @@ def chat():
             "error": True
         })
 
-    if not _is_ticket_query(message_lower):
-        issue_text = state.get("last_issue") or message
-        state["last_issue"] = issue_text
-        ask_fix_confirmation = _is_troubleshoot_request(message_lower)
+    # 1. Simple queries (Greetings, general assistant questions, small talk) -> Local Gemma-2B
+    if not force_cloud and QueryClassifier.is_simple(message):
+        if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
+            try:
+                local_response = hybrid_agent.local_model.generate(message, max_tokens=200, context=context)
+                if local_response and local_response.strip():
+                    return jsonify({
+                        "response": local_response,
+                        "model_used": "gemma-2b-local",
+                        "classification": "SIMPLE"
+                    })
+            except Exception as e:
+                print(f"Local model simple query error: {e}")
 
-        if not force_cloud and local_llm_with_tools and local_llm_with_tools.is_available():
+    # 2. Ticket queries & direct database lookups -> Local database / Local tools
+    if not force_cloud and _is_ticket_query(message_lower):
+        db_result = query_database_directly(message)
+        if db_result:
+            return jsonify({
+                "response": db_result,
+                "model_used": "gemma-2b-tools",
+                "classification": "DATABASE_DIRECT"
+            })
+        
+        if local_llm_with_tools and local_llm_with_tools.is_available():
+            try:
+                local_tool_response = local_llm_with_tools.chat(message)
+                if local_tool_response and local_tool_response.strip():
+                    return jsonify({
+                        "response": local_tool_response,
+                        "model_used": "gemma-2b-tools",
+                        "classification": "TICKET_TOOL"
+                    })
+            except Exception as e:
+                print(f"Local tools error on ticket query: {e}")
+
+    # 3. Technical issues, code debugging, and triage -> Cloud Gemini (with local fallback)
+    issue_text = state.get("last_issue") or message
+    state["last_issue"] = issue_text
+    ask_fix_confirmation = _is_troubleshoot_request(message_lower)
+
+    if adk_agent is None:
+        if force_cloud:
+            return jsonify({
+                "response": "@cloud was requested, but Cloud Gemini is not available right now. Check API key/network and try again.",
+                "model_used": "gemini-cloud",
+                "classification": "FORCED_CLOUD",
+                "error": True,
+            })
+        if local_llm_with_tools and local_llm_with_tools.is_available():
             try:
                 local_tool_response = local_llm_with_tools.chat(issue_text)
                 response_text = local_tool_response or ""
@@ -2201,16 +2251,7 @@ def chat():
                     "classification": "TRIAGE"
                 })
             except Exception as local_err:
-                print(f"Local LLM with tools failed: {local_err}, trying cloud...")
-
-        if adk_agent is None:
-            if force_cloud:
-                return jsonify({
-                    "response": "@cloud was requested, but Cloud Gemini is not available right now. Check API key/network and try again.",
-                    "model_used": "gemini-cloud",
-                    "classification": "FORCED_CLOUD",
-                    "error": True,
-                })
+                print(f"Local LLM with tools failed: {local_err}")
             if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
                 try:
                     local_response = hybrid_agent.local_model.generate(issue_text)
