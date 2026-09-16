@@ -209,33 +209,17 @@ class LocalGemmaModel:
         return "\n".join(context_parts) if context_parts else ""
     
     def _enhance_prompt(self, prompt: str, context: str) -> str:
-        """Enhance prompt with Tandion expert role and context"""
-        # Extract the core role from agent_instruction
-        role_instruction = agent_instruction.strip()
-        
-        # Add instructions for staying in character
-        character_guidance = """
-**IMPORTANT - STAY IN CHARACTER:**
-- You are a skilled expert in triaging and debugging software issues for Tandion IT Software company
-- Always identify yourself as working for Tandion when appropriate
-- Maintain your professional expertise role - you are NOT a generic assistant
-- Be helpful, professional, and focused on software bug triaging
-- For simple queries (greetings, basic questions), respond naturally but remember your role
-- If asked about your identity, mention you're a Tandion software bug expert
-- Keep responses dynamic and contextual, but always maintain your professional identity
-"""
-        
-        # Build the enhanced prompt
-        parts = [role_instruction, character_guidance]
-        
+        """Enhance prompt with Tandion expert role and context - concise for fast CPU inference"""
+        system_instruction = (
+            "You are a helpful, professional software bug assistant for IT Software company Tandion. "
+            "Help users with greetings, bug triage, and software troubleshooting. Be concise and friendly."
+        )
+        parts = [system_instruction]
         if context:
-            parts.append(f"\n**Context:**\n{context}")
-        
-        parts.append(f"\n**User Query:** {prompt}")
-        parts.append("\n**Your Response (stay in character as Tandion expert):**")
-        
-        enhanced = "\n".join(parts)
-        return enhanced
+            parts.append(f"\nContext: {context}")
+        parts.append(f"\nUser: {prompt}")
+        parts.append("\nAssistant:")
+        return "\n".join(parts)
     
     def _post_process_response(self, response: str, original_prompt: str, context: Optional[dict]) -> str:
         """Post-process response to ensure it maintains Tandion expert role"""

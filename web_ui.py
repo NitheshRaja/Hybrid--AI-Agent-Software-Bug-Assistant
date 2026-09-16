@@ -2192,7 +2192,7 @@ def chat():
     if not force_cloud and QueryClassifier.is_simple(message):
         if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
             try:
-                local_response = hybrid_agent.local_model.generate(message, max_tokens=200, context=context)
+                local_response = hybrid_agent.local_model.generate(message, max_tokens=120, context=context)
                 if local_response and local_response.strip():
                     return jsonify({
                         "response": local_response,
