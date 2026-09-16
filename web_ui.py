@@ -32,7 +32,7 @@ from software_bug_assistant.tools.local_tools import (
     query_stackexchange,
     search_google,
 )
-from software_bug_assistant.hybrid_agent import HybridAgent, classify_query
+from software_bug_assistant.hybrid_agent import HybridAgent, QueryClassifier, classify_query
 import threading
 from pathlib import Path
 
