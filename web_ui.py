@@ -9,6 +9,8 @@ Unified Web UI for Hybrid Software Bug Assistant
 import os
 import re
 import sys
+import json
+import queue
 import base64
 from datetime import datetime
 from typing import Optional
@@ -1175,6 +1177,19 @@ HTML_TEMPLATE = """
             30% { transform: translateY(-12px); }
         }
         
+        .typing-cursor {
+            display: inline-block;
+            color: var(--accent);
+            font-weight: 700;
+            margin-left: 2px;
+            animation: blink 0.8s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
         /* Input Area */
         .input-area {
             padding: 24px 32px;
@@ -1846,6 +1861,12 @@ HTML_TEMPLATE = """
             chatArea.appendChild(typing);
             chatArea.scrollTop = chatArea.scrollHeight;
             
+            // Assistant message element placeholders for streaming
+            let assistantMessageDiv = null;
+            let assistantBubble = null;
+            let accumulatedText = "";
+            let modelUsed = null;
+
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
@@ -1855,35 +1876,176 @@ HTML_TEMPLATE = """
                         history: conversationHistory,
                         client_id: clientId,
                         image_data: imagePayloadBase64,
-                        image_mime: imagePayloadMime
+                        image_mime: imagePayloadMime,
+                        stream: true
                     }),
                     signal: currentAbortController.signal
                 });
                 
-                const data = await response.json();
-                typing.remove();
+                const contentType = response.headers.get('content-type') || '';
                 
-                if (data.error) {
-                    addMessage('Error: ' + data.error, false);
+                if (contentType.includes('text/event-stream')) {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let buffer = '';
+
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); // keep partial line in buffer
+
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (!trimmed.startsWith('data:')) continue;
+                            const jsonStr = trimmed.substring(5).trim();
+                            if (!jsonStr) continue;
+
+                            try {
+                                const event = JSON.parse(jsonStr);
+
+                                if (event.type === 'meta') {
+                                    modelUsed = event.model_used;
+                                    if (typing && typing.parentNode) typing.remove();
+
+                                    if (!assistantMessageDiv) {
+                                        assistantMessageDiv = document.createElement('div');
+                                        assistantMessageDiv.className = 'message assistant';
+
+                                        const avatar = document.createElement('div');
+                                        avatar.className = 'message-avatar';
+                                        avatar.textContent = '🤖';
+
+                                        const content = document.createElement('div');
+                                        content.className = 'message-content';
+
+                                        assistantBubble = document.createElement('div');
+                                        assistantBubble.className = 'message-bubble';
+                                        assistantBubble.innerHTML = '<span class="typing-cursor">▌</span>';
+
+                                        content.appendChild(assistantBubble);
+                                        assistantMessageDiv.appendChild(avatar);
+                                        assistantMessageDiv.appendChild(content);
+
+                                        chatArea.appendChild(assistantMessageDiv);
+                                        chatArea.scrollTop = chatArea.scrollHeight;
+                                    }
+                                } else if (event.type === 'chunk') {
+                                    if (typing && typing.parentNode) typing.remove();
+
+                                    if (!assistantBubble) {
+                                        assistantMessageDiv = document.createElement('div');
+                                        assistantMessageDiv.className = 'message assistant';
+                                        const avatar = document.createElement('div');
+                                        avatar.className = 'message-avatar';
+                                        avatar.textContent = '🤖';
+                                        const content = document.createElement('div');
+                                        content.className = 'message-content';
+                                        assistantBubble = document.createElement('div');
+                                        assistantBubble.className = 'message-bubble';
+                                        content.appendChild(assistantBubble);
+                                        assistantMessageDiv.appendChild(avatar);
+                                        assistantMessageDiv.appendChild(content);
+                                        chatArea.appendChild(assistantMessageDiv);
+                                    }
+
+                                    accumulatedText += event.text;
+                                    marked.setOptions({ gfm: true, breaks: true });
+                                    assistantBubble.innerHTML = marked.parse(accumulatedText) + '<span class="typing-cursor">▌</span>';
+                                    chatArea.scrollTop = chatArea.scrollHeight;
+                                } else if (event.type === 'done') {
+                                    if (assistantBubble) {
+                                        marked.setOptions({ gfm: true, breaks: true });
+                                        assistantBubble.innerHTML = marked.parse(accumulatedText);
+
+                                        // Wrap tables in scrollable container
+                                        const tables = assistantBubble.querySelectorAll('table');
+                                        tables.forEach(table => {
+                                            const container = document.createElement('div');
+                                            container.className = 'table-container';
+                                            table.parentNode.insertBefore(container, table);
+                                            container.appendChild(table);
+                                        });
+
+                                        // Append metadata badge
+                                        if (modelUsed) {
+                                            const meta = document.createElement('div');
+                                            meta.className = 'message-meta';
+                                            const isLocal = modelUsed === 'gemma-2b-local';
+                                            const isLocalTools = modelUsed === 'gemma-2b-tools';
+                                            let modelLabel, modelIcon, tagClass;
+                                            if (isLocalTools) {
+                                                modelLabel = 'Gemma-2B + Tools';
+                                                modelIcon = '🔧';
+                                                tagClass = 'local';
+                                            } else if (isLocal) {
+                                                modelLabel = 'Gemma-2B';
+                                                modelIcon = '🏠';
+                                                tagClass = 'local';
+                                            } else {
+                                                modelLabel = 'Gemini';
+                                                modelIcon = '☁️';
+                                                tagClass = 'cloud';
+                                            }
+                                            meta.innerHTML = `
+                                                <span class="model-tag ${tagClass}">
+                                                    ${modelIcon} ${isLocal || isLocalTools ? 'Local' : 'Cloud'} • ${modelLabel}
+                                                </span>
+                                                <span>${new Date().toLocaleTimeString()}</span>
+                                            `;
+                                            assistantBubble.parentNode.appendChild(meta);
+                                        }
+                                    }
+
+                                    conversationHistory.push({
+                                        role: 'user',
+                                        content: historyUserText,
+                                        image_url: imagePreviewUrl,
+                                    });
+                                    conversationHistory.push({ role: 'assistant', content: accumulatedText, model_used: modelUsed });
+                                    queryCount++;
+                                    document.getElementById('queryCount').textContent = queryCount;
+                                    saveChatState();
+                                }
+                            } catch (parseErr) {
+                                console.warn('Error parsing SSE event:', parseErr);
+                            }
+                        }
+                    }
                 } else {
-                    addMessage(data.response, false, data.model_used);
-                    conversationHistory.push({
-                        role: 'user',
-                        content: historyUserText,
-                        image_url: imagePreviewUrl,
-                    });
-                    conversationHistory.push({ role: 'assistant', content: data.response, model_used: data.model_used });
+                    // Fallback to JSON response if not SSE
+                    const data = await response.json();
+                    if (typing && typing.parentNode) typing.remove();
                     
-                    queryCount++;
-                    document.getElementById('queryCount').textContent = queryCount;
-                    saveChatState();
+                    if (data.error) {
+                        addMessage('Error: ' + data.error, false);
+                    } else {
+                        addMessage(data.response, false, data.model_used);
+                        conversationHistory.push({
+                            role: 'user',
+                            content: historyUserText,
+                            image_url: imagePreviewUrl,
+                        });
+                        conversationHistory.push({ role: 'assistant', content: data.response, model_used: data.model_used });
+                        
+                        queryCount++;
+                        document.getElementById('queryCount').textContent = queryCount;
+                        saveChatState();
+                    }
                 }
             } catch (error) {
-                typing.remove();
+                if (typing && typing.parentNode) typing.remove();
                 if (error.name === 'AbortError') {
-                    addMessage('⏹️ Response stopped by user.', false);
+                    if (assistantBubble) {
+                        marked.setOptions({ gfm: true, breaks: true });
+                        assistantBubble.innerHTML = marked.parse(accumulatedText) + ' *(stopped)*';
+                    } else {
+                        addMessage('⏹️ Response stopped by user.', false);
+                    }
                 } else {
-                    addMessage('Connection error. Please try again.', false);
+                    addMessage('Connection error. Please try again: ' + error.message, false);
                 }
             }
             
@@ -2015,9 +2177,167 @@ def get_status():
     })
 
 
+def sse_event(payload: dict) -> str:
+    """Format SSE event string for client streaming."""
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+def _get_fast_greeting(msg_lower: str) -> Optional[str]:
+    """Return an instant, high-quality greeting/intro (< 20ms) for common pleasantries."""
+    cleaned = re.sub(r'[^\w\s]', '', msg_lower).strip()
+    greetings = {
+        "hi": "Hello! 👋 I'm your Tandion Software Bug Assistant. How can I assist you with your software, tickets, or troubleshooting today?",
+        "hello": "Hello! 👋 I'm your Tandion Software Bug Assistant. How can I help you troubleshoot a bug or manage your tickets today?",
+        "hey": "Hey there! 👋 What issue or ticket can I help you with today?",
+        "good morning": "Good morning! ☀️ How can I assist you with software debugging or tickets today?",
+        "good evening": "Good evening! 🌙 How can I help you today?",
+        "who are you": "I am the **Hybrid AI Software Bug Assistant** for **Tandion IT Software**. I combine local Gemma-2B processing with Cloud Gemini to help you triage errors, search documentation, manage support tickets, and resolve bugs efficiently.",
+        "what can you do": "Here is what I can do for you:\n\n- 🔍 **Triage & Debug Code**: Analyze stack traces, syntax errors, and system exceptions.\n- 🎫 **Manage Tickets**: View open/closed tickets, update status and priority, or create new bug tickets directly.\n- 📚 **Search Solutions**: Find relevant troubleshooting guides and StackOverflow discussions.\n- 🏠 **Hybrid Local & Cloud**: Run queries locally with `@local` (Gemma-2B) or use advanced reasoning with `@cloud` (Gemini).",
+        "help": "How can I help you? You can:\n1. Describe any bug or error message (or paste a screenshot).\n2. Ask to view tickets (e.g. *\"Show all open tickets\"* or *\"Ticket #11\"*).\n3. Update tickets (e.g. *\"Close ticket 11\"* or *\"Change priority of ticket 11 to critical\"*).\n4. Use `@local` to run locally on Gemma-2B or `@cloud` for Cloud Gemini."
+    }
+    return greetings.get(cleaned)
+
+
+def stream_cloud_gemini(adk_agent_instance, issue_text: str, image_bytes=None, image_mime="image/png"):
+    """Stream Gemini Cloud tokens through a thread-safe queue for real-time SSE delivery."""
+    q = queue.Queue()
+
+    def worker():
+        try:
+            import asyncio
+            import uuid
+            from google.adk.runners import InMemoryRunner
+            from google.genai import types
+
+            async def run_async_agent(include_image: bool = True):
+                parts = [types.Part(text=issue_text)]
+                if include_image and image_bytes is not None:
+                    parts.append(types.Part.from_bytes(data=image_bytes, mime_type=image_mime))
+                content = types.Content(role="user", parts=parts)
+
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", message=".*mismatch.*")
+                    runner = InMemoryRunner(agent=adk_agent_instance, app_name="software_bug_assistant")
+
+                user_id = "web_ui_user"
+                session_id = f"session_{uuid.uuid4().hex[:8]}"
+
+                await runner.session_service.create_session(
+                    app_name="software_bug_assistant",
+                    user_id=user_id,
+                    session_id=session_id,
+                )
+
+                async for event in runner.run_async(
+                    user_id=user_id,
+                    session_id=session_id,
+                    new_message=content
+                ):
+                    if hasattr(event, 'content') and event.content:
+                        if hasattr(event.content, 'parts') and event.content.parts:
+                            for response_part in event.content.parts:
+                                if hasattr(response_part, 'text') and response_part.text:
+                                    q.put(("chunk", response_part.text))
+                        elif hasattr(event.content, 'text') and event.content.text:
+                            q.put(("chunk", event.content.text))
+                    elif hasattr(event, 'text') and event.text:
+                        q.put(("chunk", event.text))
+                    elif isinstance(event, str) and event:
+                        q.put(("chunk", event))
+
+            try:
+                asyncio.run(run_async_agent(include_image=True))
+            except Exception as image_run_err:
+                if image_bytes is not None:
+                    print(f"Cloud triage image processing failed, retrying text-only: {image_run_err}")
+                    q.put(("chunk", "I couldn't fully process the image, so I used your text prompt instead.\n\n"))
+                    asyncio.run(run_async_agent(include_image=False))
+                else:
+                    raise image_run_err
+
+            # Append StackExchange results non-blockingly at the end of the stream
+            try:
+                stack = query_stackexchange(issue_text)
+                stack_section = _format_search_section("📚 StackOverflow Related Issues", stack.get("results", []))
+                if stack_section:
+                    q.put(("chunk", "\n\n---\n\n" + stack_section))
+            except Exception as search_err:
+                print(f"StackExchange search skipped: {search_err}")
+
+            q.put(("done", None))
+        except Exception as e:
+            q.put(("error", e))
+
+    t = threading.Thread(target=worker, daemon=True)
+    t.start()
+
+    while True:
+        try:
+            kind, val = q.get(timeout=100)
+            if kind == "chunk":
+                yield val
+            elif kind == "done":
+                break
+            elif kind == "error":
+                raise val
+        except queue.Empty:
+            break
+
+
+def send_chat_response(
+    content,
+    model_used: str,
+    classification: str,
+    ask_fix_confirmation: bool = False,
+    is_stream: bool = False,
+    error: bool = False,
+    state: Optional[dict] = None
+):
+    """Unified response builder supporting both real-time SSE streaming and standard JSON."""
+    if not is_stream:
+        if isinstance(content, str):
+            final_text = content
+        else:
+            final_text = "".join(list(content))
+        if ask_fix_confirmation:
+            final_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
+            if state is not None:
+                state["stage"] = "awaiting_fix_confirmation"
+        resp_payload = {
+            "response": final_text,
+            "model_used": model_used,
+            "classification": classification
+        }
+        if error:
+            resp_payload["error"] = True
+        return jsonify(resp_payload)
+    
+    # Streaming Response via Server-Sent Events (SSE)
+    def event_stream():
+        yield sse_event({"type": "meta", "model_used": model_used, "classification": classification})
+        if isinstance(content, str):
+            yield sse_event({"type": "chunk", "text": content})
+        else:
+            try:
+                for chunk in content:
+                    if chunk:
+                        yield sse_event({"type": "chunk", "text": chunk})
+            except Exception as stream_err:
+                print(f"Streaming error: {stream_err}")
+                yield sse_event({"type": "chunk", "text": f"\n\n*(Stream error: {stream_err})*"})
+        if ask_fix_confirmation:
+            yield sse_event({"type": "chunk", "text": "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."})
+            if state is not None:
+                state["stage"] = "awaiting_fix_confirmation"
+        yield sse_event({"type": "done"})
+
+    return Response(stream_with_context(event_stream()), mimetype='text/event-stream')
+
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """Handle chat messages and route to appropriate model"""
+    """Handle chat messages and route to appropriate model with optional live streaming"""
     global hybrid_agent, adk_agent, local_llm_with_tools, _model_downloading
     
     # Initialize agents if needed
@@ -2029,12 +2349,15 @@ def chat():
             "error": "Failed to initialize hybrid agent"
         }), 500
     
-    data = request.json
+    data = request.json or {}
     message = data.get('message', '').strip()
     history = data.get('history', [])
     client_id = data.get('client_id') or request.remote_addr or "anonymous"
     image_data = data.get('image_data')
     image_mime = data.get('image_mime', 'image/png')
+    is_stream = bool(data.get('stream', False))
+    state = _get_client_state(client_id)
+
     image_bytes = None
     if image_data:
         try:
@@ -2051,12 +2374,14 @@ def chat():
         force_cloud = True
         message = re.sub(r'^@cloud\s*:?', '', message, flags=re.IGNORECASE).strip()
         if not message:
-            return jsonify({
-                "response": "Please add a query after @cloud, for example: @cloud show open tickets",
-                "model_used": "gemini-cloud",
-                "classification": "FORCED_CLOUD",
-                "error": True,
-            })
+            return send_chat_response(
+                "Please add a query after @cloud, for example: @cloud show open tickets",
+                model_used="gemini-cloud",
+                classification="FORCED_CLOUD",
+                error=True,
+                is_stream=is_stream,
+                state=state
+            )
         print(f"🌩️ Force Cloud Gemini requested for: {message}")
 
     # Check for @local prefix to force Local Gemma-2B
@@ -2065,12 +2390,14 @@ def chat():
         force_local = True
         message = re.sub(r'^@local\s*:?', '', message, flags=re.IGNORECASE).strip()
         if not message:
-            return jsonify({
-                "response": "Please add a query after @local, for example: @local how to troubleshoot slow queries",
-                "model_used": "gemma-2b-local",
-                "classification": "FORCED_LOCAL",
-                "error": True,
-            })
+            return send_chat_response(
+                "Please add a query after @local, for example: @local how to troubleshoot slow queries",
+                model_used="gemma-2b-local",
+                classification="FORCED_LOCAL",
+                error=True,
+                is_stream=is_stream,
+                state=state
+            )
         print(f"🏠 Force Local Gemma requested for: {message}")
 
     if image_bytes is not None:
@@ -2078,11 +2405,9 @@ def chat():
         if not message:
             message = "Analyze the uploaded image and provide troubleshooting steps."
 
-    state = _get_client_state(client_id)
     message_lower = message.lower()
 
     if force_cloud and state["stage"] == "awaiting_fix_confirmation":
-        # Explicit cloud request should not be blocked by yes/no confirmation gate.
         state["stage"] = "idle"
         state["last_issue"] = ""
 
@@ -2090,39 +2415,46 @@ def chat():
         if _is_affirmative(message_lower):
             state["stage"] = "idle"
             state["last_issue"] = ""
-            return jsonify({
-                "response": "✅ Glad it is fixed. I will not create a ticket. Anything else you need?",
-                "model_used": "triage",
-                "classification": "FIX_CONFIRMED"
-            })
+            return send_chat_response(
+                "✅ Glad it is fixed. I will not create a ticket. Anything else you need?",
+                model_used="triage",
+                classification="FIX_CONFIRMED",
+                is_stream=is_stream,
+                state=state
+            )
         if _is_negative(message_lower):
             issue_text = _derive_issue_text_for_ticket(state.get("last_issue", ""), history)
             state["stage"] = "idle"
             state["last_issue"] = ""
             if not issue_text:
-                return jsonify({
-                    "response": "I can create a ticket, but I need the issue details first. What problem should I file?",
-                    "model_used": "triage",
-                    "classification": "NEED_DETAILS"
-                })
+                return send_chat_response(
+                    "I can create a ticket, but I need the issue details first. What problem should I file?",
+                    model_used="triage",
+                    classification="NEED_DETAILS",
+                    is_stream=is_stream,
+                    state=state
+                )
             ticket_creator = get_ticket_creator()
             ticket_response = ticket_creator.create_ticket_from_query(issue_text)
-            return jsonify({
-                "response": ticket_response,
-                "model_used": "database-direct",
-                "classification": "TICKET_CREATED"
-            })
+            return send_chat_response(
+                ticket_response,
+                model_used="database-direct",
+                classification="TICKET_CREATED",
+                is_stream=is_stream,
+                state=state
+            )
 
         if _looks_like_new_query(message_lower):
-            # User started a new request; do not keep blocking with yes/no gate.
             state["stage"] = "idle"
             state["last_issue"] = ""
         else:
-            return jsonify({
-                "response": "Please confirm if the issue is fixed. Reply 'yes' or 'no'.",
-                "model_used": "triage",
-                "classification": "NEED_CONFIRMATION"
-            })
+            return send_chat_response(
+                "Please confirm if the issue is fixed. Reply 'yes' or 'no'.",
+                model_used="triage",
+                classification="NEED_CONFIRMATION",
+                is_stream=is_stream,
+                state=state
+            )
 
     if state["stage"] == "awaiting_problem":
         state["stage"] = "idle"
@@ -2134,17 +2466,31 @@ def chat():
         "current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "conversation_history": [
             f"{msg['role']}: {msg['content']}" 
-            for msg in history[-5:]  # Last 5 messages
+            for msg in history[-5:]
         ] if history else []
     }
 
     if _needs_problem_details(message_lower):
         state["stage"] = "awaiting_problem"
-        return jsonify({
-            "response": "What problem should I fix? Please describe the issue (symptoms, error text, when it happens).",
-            "model_used": "triage",
-            "classification": "NEED_DETAILS"
-        })
+        return send_chat_response(
+            "What problem should I fix? Please describe the issue (symptoms, error text, when it happens).",
+            model_used="triage",
+            classification="NEED_DETAILS",
+            is_stream=is_stream,
+            state=state
+        )
+
+    # 0. Fast-path for common pleasantries & greetings (< 20ms response time)
+    if not force_cloud and not force_local:
+        fast_greeting = _get_fast_greeting(message_lower)
+        if fast_greeting:
+            return send_chat_response(
+                fast_greeting,
+                model_used="gemma-2b-local",
+                classification="FAST_GREETING",
+                is_stream=is_stream,
+                state=state
+            )
 
     # If user explicitly requested @local, handle exclusively with local model/tools
     if force_local:
@@ -2152,33 +2498,25 @@ def chat():
         if _is_ticket_query(message_lower):
             db_result = query_database_directly(message)
             if db_result:
-                return jsonify({
-                    "response": db_result,
-                    "model_used": "gemma-2b-tools",
-                    "classification": "FORCED_LOCAL"
-                })
+                return send_chat_response(db_result, "gemma-2b-tools", "FORCED_LOCAL", is_stream=is_stream, state=state)
             if local_llm_with_tools and local_llm_with_tools.is_available():
                 try:
                     local_tool_response = local_llm_with_tools.chat(message)
                     if local_tool_response and local_tool_response.strip():
-                        return jsonify({
-                            "response": local_tool_response,
-                            "model_used": "gemma-2b-tools",
-                            "classification": "FORCED_LOCAL"
-                        })
+                        return send_chat_response(local_tool_response, "gemma-2b-tools", "FORCED_LOCAL", is_stream=is_stream, state=state)
                 except Exception as e:
                     print(f"Force local tools error: {e}")
 
-        # For conversational / technical questions with @local, generate directly via Gemma-2B
+        # For conversational / technical questions with @local, stream directly via Gemma-2B
         if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
             try:
-                local_response = hybrid_agent.local_model.generate(message, max_tokens=150, context=context)
-                if local_response and local_response.strip():
-                    return jsonify({
-                        "response": local_response,
-                        "model_used": "gemma-2b-local",
-                        "classification": "FORCED_LOCAL"
-                    })
+                if is_stream:
+                    gen = hybrid_agent.local_model.generate_stream(message, max_tokens=150, context=context)
+                    return send_chat_response(gen, "gemma-2b-local", "FORCED_LOCAL", is_stream=True, state=state)
+                else:
+                    local_response = hybrid_agent.local_model.generate(message, max_tokens=150, context=context)
+                    if local_response and local_response.strip():
+                        return send_chat_response(local_response, "gemma-2b-local", "FORCED_LOCAL", is_stream=False, state=state)
             except Exception as e:
                 print(f"Force local model error: {e}")
 
@@ -2187,40 +2525,40 @@ def chat():
             try:
                 local_tool_response = local_llm_with_tools.chat(message)
                 if local_tool_response and local_tool_response.strip():
-                    return jsonify({
-                        "response": local_tool_response,
-                        "model_used": "gemma-2b-tools",
-                        "classification": "FORCED_LOCAL"
-                    })
+                    return send_chat_response(local_tool_response, "gemma-2b-tools", "FORCED_LOCAL", is_stream=is_stream, state=state)
             except Exception as e:
                 print(f"Force local tools fallback error: {e}")
 
         if _model_downloading:
-            return jsonify({
-                "response": "⏳ **Local Gemma-2B is currently downloading in the background (~1.5GB).**\n\nPlease wait a moment for the download to complete, or ask without `@local` to use Cloud Gemini in the meantime.",
-                "model_used": "offline",
-                "classification": "FORCED_LOCAL",
-                "error": True
-            })
+            return send_chat_response(
+                "⏳ **Local Gemma-2B is currently downloading in the background (~1.5GB).**\n\nPlease wait a moment for the download to complete, or ask without `@local` to use Cloud Gemini in the meantime.",
+                model_used="offline",
+                classification="FORCED_LOCAL",
+                error=True,
+                is_stream=is_stream,
+                state=state
+            )
 
-        return jsonify({
-            "response": "⚠️ Local Gemma-2B model is not available right now. Please try again in a few moments, or ask without `@local` to use Cloud Gemini.",
-            "model_used": "offline",
-            "classification": "FORCED_LOCAL",
-            "error": True
-        })
+        return send_chat_response(
+            "⚠️ Local Gemma-2B model is not available right now. Please try again in a few moments, or ask without `@local` to use Cloud Gemini.",
+            model_used="offline",
+            classification="FORCED_LOCAL",
+            error=True,
+            is_stream=is_stream,
+            state=state
+        )
 
     # 1. Simple queries (Greetings, general assistant questions, small talk) -> Local Gemma-2B
     if not force_cloud and QueryClassifier.is_simple(message):
         if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
             try:
-                local_response = hybrid_agent.local_model.generate(message, max_tokens=120, context=context)
-                if local_response and local_response.strip():
-                    return jsonify({
-                        "response": local_response,
-                        "model_used": "gemma-2b-local",
-                        "classification": "SIMPLE"
-                    })
+                if is_stream:
+                    gen = hybrid_agent.local_model.generate_stream(message, max_tokens=100, context=context)
+                    return send_chat_response(gen, "gemma-2b-local", "SIMPLE", is_stream=True, state=state)
+                else:
+                    local_response = hybrid_agent.local_model.generate(message, max_tokens=100, context=context)
+                    if local_response and local_response.strip():
+                        return send_chat_response(local_response, "gemma-2b-local", "SIMPLE", is_stream=False, state=state)
             except Exception as e:
                 print(f"Local model simple query error: {e}")
 
@@ -2228,21 +2566,13 @@ def chat():
     if not force_cloud and _is_ticket_query(message_lower):
         db_result = query_database_directly(message)
         if db_result:
-            return jsonify({
-                "response": db_result,
-                "model_used": "gemma-2b-tools",
-                "classification": "DATABASE_DIRECT"
-            })
+            return send_chat_response(db_result, "gemma-2b-tools", "DATABASE_DIRECT", is_stream=is_stream, state=state)
         
         if local_llm_with_tools and local_llm_with_tools.is_available():
             try:
                 local_tool_response = local_llm_with_tools.chat(message)
                 if local_tool_response and local_tool_response.strip():
-                    return jsonify({
-                        "response": local_tool_response,
-                        "model_used": "gemma-2b-tools",
-                        "classification": "TICKET_TOOL"
-                    })
+                    return send_chat_response(local_tool_response, "gemma-2b-tools", "TICKET_TOOL", is_stream=is_stream, state=state)
             except Exception as e:
                 print(f"Local tools error on ticket query: {e}")
 
@@ -2253,106 +2583,119 @@ def chat():
 
     # If user explicitly requested @cloud, but Cloud Gemini is not configured/available
     if force_cloud and adk_agent is None:
-        return jsonify({
-            "response": "@cloud was requested, but Cloud Gemini is not available right now. Check API key/network and try again.",
-            "model_used": "gemini-cloud",
-            "classification": "FORCED_CLOUD",
-            "error": True,
-        })
+        return send_chat_response(
+            "@cloud was requested, but Cloud Gemini is not available right now. Check API key/network and try again.",
+            model_used="gemini-cloud",
+            classification="FORCED_CLOUD",
+            error=True,
+            is_stream=is_stream,
+            state=state
+        )
 
     # Try Cloud Gemini first when available
     if adk_agent is not None:
         try:
-            import asyncio
-            import uuid
-            import traceback
-            from google.adk.runners import InMemoryRunner
-            from google.genai import types
-
-            async def run_agent_async(include_image: bool = True):
-                parts = [types.Part(text=issue_text)]
-                if include_image and image_bytes is not None:
-                    parts.append(types.Part.from_bytes(data=image_bytes, mime_type=image_mime))
-                content = types.Content(role="user", parts=parts)
-
-                import warnings
-                with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore", message=".*mismatch.*")
-                    runner = InMemoryRunner(agent=adk_agent, app_name="software_bug_assistant")
-
-                user_id = "web_ui_user"
-                session_id = f"session_{uuid.uuid4().hex[:8]}"
-
-                await runner.session_service.create_session(
-                    app_name="software_bug_assistant",
-                    user_id=user_id,
-                    session_id=session_id,
+            if is_stream:
+                gen = stream_cloud_gemini(adk_agent, issue_text, image_bytes, image_mime)
+                return send_chat_response(
+                    gen,
+                    model_used="gemini-cloud",
+                    classification="FORCED_CLOUD" if force_cloud else "TRIAGE",
+                    ask_fix_confirmation=ask_fix_confirmation,
+                    is_stream=True,
+                    state=state
                 )
+            else:
+                import asyncio
+                import uuid
+                from google.adk.runners import InMemoryRunner
+                from google.genai import types
 
-                response_chunks = []
-                async for event in runner.run_async(
-                    user_id=user_id,
-                    session_id=session_id,
-                    new_message=content
-                ):
-                    if hasattr(event, 'content') and event.content:
-                        if hasattr(event.content, 'parts') and event.content.parts:
-                            for response_part in event.content.parts:
-                                if hasattr(response_part, 'text') and response_part.text:
-                                    response_chunks.append(response_part.text)
-                        elif hasattr(event.content, 'text'):
-                            response_chunks.append(event.content.text)
-                    elif hasattr(event, 'text'):
-                        response_chunks.append(event.text)
-                    elif isinstance(event, str):
-                        response_chunks.append(event)
+                async def run_agent_async(include_image: bool = True):
+                    parts = [types.Part(text=issue_text)]
+                    if include_image and image_bytes is not None:
+                        parts.append(types.Part.from_bytes(data=image_bytes, mime_type=image_mime))
+                    content = types.Content(role="user", parts=parts)
 
-                return ''.join(response_chunks) if response_chunks else None
+                    import warnings
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings("ignore", message=".*mismatch.*")
+                        runner = InMemoryRunner(agent=adk_agent, app_name="software_bug_assistant")
 
-            try:
-                response_text = asyncio.run(run_agent_async(include_image=True))
-            except Exception as image_run_err:
-                # If image processing fails, retry with text-only so user still gets help.
-                if image_bytes is not None:
-                    print(f"Cloud triage image processing failed, retrying text-only: {image_run_err}")
-                    response_text = asyncio.run(run_agent_async(include_image=False))
-                    response_text = (
-                        "I couldn't fully process the image this time, so I used your text prompt instead.\n\n"
-                        + (response_text or "")
+                    user_id = "web_ui_user"
+                    session_id = f"session_{uuid.uuid4().hex[:8]}"
+
+                    await runner.session_service.create_session(
+                        app_name="software_bug_assistant",
+                        user_id=user_id,
+                        session_id=session_id,
                     )
-                else:
-                    raise
 
-            if response_text and response_text.strip():
-                response_text = response_text.strip()
+                    response_chunks = []
+                    async for event in runner.run_async(
+                        user_id=user_id,
+                        session_id=session_id,
+                        new_message=content
+                    ):
+                        if hasattr(event, 'content') and event.content:
+                            if hasattr(event.content, 'parts') and event.content.parts:
+                                for response_part in event.content.parts:
+                                    if hasattr(response_part, 'text') and response_part.text:
+                                        response_chunks.append(response_part.text)
+                            elif hasattr(event.content, 'text'):
+                                response_chunks.append(event.content.text)
+                        elif hasattr(event, 'text'):
+                            response_chunks.append(event.text)
+                        elif isinstance(event, str):
+                            response_chunks.append(event)
+
+                    return ''.join(response_chunks) if response_chunks else None
+
                 try:
-                    stack = query_stackexchange(issue_text)
-                    stack_section = _format_search_section("📚 StackOverflow Related Issues", stack.get("results", []))
-                    if stack_section:
-                        response_text += "\n\n---\n\n" + stack_section
-                except Exception as search_err:
-                    print(f"StackExchange search skipped: {search_err}")
+                    response_text = asyncio.run(run_agent_async(include_image=True))
+                except Exception as image_run_err:
+                    if image_bytes is not None:
+                        print(f"Cloud triage image processing failed, retrying text-only: {image_run_err}")
+                        response_text = asyncio.run(run_agent_async(include_image=False))
+                        response_text = (
+                            "I couldn't fully process the image this time, so I used your text prompt instead.\n\n"
+                            + (response_text or "")
+                        )
+                    else:
+                        raise
 
-                if ask_fix_confirmation:
-                    response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
-                    state["stage"] = "awaiting_fix_confirmation"
+                if response_text and response_text.strip():
+                    response_text = response_text.strip()
+                    try:
+                        stack = query_stackexchange(issue_text)
+                        stack_section = _format_search_section("📚 StackOverflow Related Issues", stack.get("results", []))
+                        if stack_section:
+                            response_text += "\n\n---\n\n" + stack_section
+                    except Exception as search_err:
+                        print(f"StackExchange search skipped: {search_err}")
 
-                return jsonify({
-                    "response": response_text,
-                    "model_used": "gemini-cloud",
-                    "classification": "FORCED_CLOUD" if force_cloud else "TRIAGE"
-                })
+                    return send_chat_response(
+                        response_text,
+                        model_used="gemini-cloud",
+                        classification="FORCED_CLOUD" if force_cloud else "TRIAGE",
+                        ask_fix_confirmation=ask_fix_confirmation,
+                        is_stream=False,
+                        state=state
+                    )
 
         except Exception as e:
             print(f"Cloud triage error: {e}")
+            import traceback
             traceback.print_exc()
             if force_cloud:
-                return jsonify({
-                    "response": f"Cloud analysis failed: {e}. Please retry or ask without `@cloud` to use the local Gemma model.",
-                    "model_used": "gemini-cloud",
-                    "classification": "FORCED_CLOUD",
-                    "error": True
-                })
+                return send_chat_response(
+                    f"Cloud analysis failed: {e}. Please retry or ask without `@cloud` to use the local Gemma model.",
+                    model_used="gemini-cloud",
+                    classification="FORCED_CLOUD",
+                    error=True,
+                    is_stream=is_stream,
+                    state=state
+                )
             print("Falling back to local models after cloud failure...")
 
     # Fallback to local models (when cloud is unavailable or failed)
@@ -2361,30 +2704,40 @@ def chat():
             local_tool_response = local_llm_with_tools.chat(issue_text)
             response_text = local_tool_response or ""
             response_text = response_text.strip() or "I can help, but I need more details about the issue."
-            if ask_fix_confirmation:
-                response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
-                state["stage"] = "awaiting_fix_confirmation"
-            return jsonify({
-                "response": response_text,
-                "model_used": "gemma-2b-tools",
-                "classification": "TRIAGE"
-            })
+            return send_chat_response(
+                response_text,
+                model_used="gemma-2b-tools",
+                classification="TRIAGE",
+                ask_fix_confirmation=ask_fix_confirmation,
+                is_stream=is_stream,
+                state=state
+            )
         except Exception as local_err:
             print(f"Local LLM with tools fallback failed: {local_err}")
 
     if hybrid_agent and hybrid_agent.local_model and hybrid_agent.local_model.is_available():
         try:
-            local_response = hybrid_agent.local_model.generate(issue_text, max_tokens=256, context=context)
-            if local_response and local_response.strip():
-                response_text = local_response.strip()
-                if ask_fix_confirmation:
-                    response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
-                    state["stage"] = "awaiting_fix_confirmation"
-                return jsonify({
-                    "response": response_text,
-                    "model_used": "gemma-2b-local",
-                    "classification": "TRIAGE"
-                })
+            if is_stream:
+                gen = hybrid_agent.local_model.generate_stream(issue_text, max_tokens=150, context=context)
+                return send_chat_response(
+                    gen,
+                    model_used="gemma-2b-local",
+                    classification="TRIAGE",
+                    ask_fix_confirmation=ask_fix_confirmation,
+                    is_stream=True,
+                    state=state
+                )
+            else:
+                local_response = hybrid_agent.local_model.generate(issue_text, max_tokens=150, context=context)
+                if local_response and local_response.strip():
+                    return send_chat_response(
+                        local_response.strip(),
+                        model_used="gemma-2b-local",
+                        classification="TRIAGE",
+                        ask_fix_confirmation=ask_fix_confirmation,
+                        is_stream=False,
+                        state=state
+                    )
         except Exception as local_err:
             print(f"Local model fallback failed: {local_err}")
 
@@ -2400,15 +2753,14 @@ def chat():
     except Exception as search_err:
         print(f"StackExchange search skipped: {search_err}")
 
-    if ask_fix_confirmation:
-        response_text += "\n\n---\n\nDid that fix it? Reply **yes** or **no**. If no, I will create a ticket."
-        state["stage"] = "awaiting_fix_confirmation"
-
-    return jsonify({
-        "response": response_text,
-        "model_used": "offline",
-        "classification": "TRIAGE"
-    })
+    return send_chat_response(
+        response_text,
+        model_used="offline",
+        classification="TRIAGE",
+        ask_fix_confirmation=ask_fix_confirmation,
+        is_stream=is_stream,
+        state=state
+    )
 
 
 if __name__ == '__main__':

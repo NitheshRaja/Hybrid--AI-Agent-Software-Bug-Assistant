@@ -183,6 +183,34 @@ class LocalGemmaModel:
         
         # Post-process to ensure dynamic nature
         return self._post_process_response(response, prompt, context)
+
+    def generate_stream(self, prompt: str, max_tokens: int = 150, context: Optional[dict] = None):
+        """
+        Generate streaming tokens from Gemma-2B using llama-cpp-python's stream=True.
+        Yields token strings incrementally as generated for real-time live typing.
+        """
+        if not self.is_available():
+            raise RuntimeError("Gemma model not loaded")
+        
+        system_context = self._build_context(context)
+        enhanced_prompt = self._enhance_prompt(prompt, system_context)
+        formatted = f"<start_of_turn>user\n{enhanced_prompt}<end_of_turn>\n<start_of_turn>model\n"
+        
+        for chunk in self.model(
+            formatted,
+            max_tokens=max_tokens,
+            temperature=0.8,
+            top_p=0.9,
+            repeat_penalty=1.1,
+            stop=["<end_of_turn>", "<start_of_turn>", "\n\n\n"],
+            echo=False,
+            stream=True
+        ):
+            choices = chunk.get("choices", [])
+            if choices:
+                delta = choices[0].get("text", "")
+                if delta:
+                    yield delta
     
     def _build_context(self, context: Optional[dict]) -> str:
         """Build context string from context dict"""
