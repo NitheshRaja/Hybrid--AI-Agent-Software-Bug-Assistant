@@ -1964,7 +1964,7 @@ HTML_TEMPLATE = """
                         if (done) break;
 
                         buffer += decoder.decode(value, { stream: true });
-                        const lines = buffer.split('\n');
+                        const lines = buffer.split(String.fromCharCode(10));
                         buffer = lines.pop(); // keep partial line in buffer
 
                         for (const line of lines) {
