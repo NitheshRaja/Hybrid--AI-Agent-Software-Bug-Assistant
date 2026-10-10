@@ -325,148 +325,122 @@ HELP_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tandion Bug Assistant | Help & Examples</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #8b5cf6;
-            --accent: #06b6d4;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #0f172a;
-            --dark-light: #1e293b;
-            --dark-lighter: #334155;
-            --text: #e2e8f0;
-            --text-muted: #94a3b8;
-            --border: #475569;
-            --glass: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --bg-void: #06070a;
+            --bg-surface: #0c0e14;
+            --bg-card: rgba(18, 22, 32, 0.65);
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-card: rgba(255, 255, 255, 0.09);
+            
+            --accent-mint: #00f59b;
+            --accent-mint-glow: rgba(0, 245, 155, 0.35);
+            --accent-cyan: #00e5ff;
+            --accent-amber: #ffb800;
+            --accent-rose: #ff3366;
+            
+            --text-pure: #ffffff;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--dark);
-            color: var(--text);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-void);
+            color: var(--text-primary);
             min-height: 100vh;
         }
 
-        .bg-animation {
+        .aurora-bg {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background:
-                radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 40% 40%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
-                var(--dark);
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -2;
+            background: radial-gradient(circle at 50% 100%, #0a0d16 0%, #06070a 100%);
         }
 
-        .grid-overlay {
+        .aurora-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .aurora-orb-1 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, #00f59b 0%, rgba(0, 245, 155, 0) 70%);
+            top: -100px; left: 20%;
+        }
+        .aurora-orb-2 {
+            width: 550px; height: 550px;
+            background: radial-gradient(circle, #00b4d8 0%, rgba(0, 180, 216, 0) 70%);
+            bottom: -150px; right: 10%;
+        }
+
+        .matrix-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: -1;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 50px 50px;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 32px 32px;
+            opacity: 0.5;
         }
 
         .page {
-            max-width: 1100px;
+            max-width: 1050px;
             margin: 0 auto;
-            padding: 32px 24px 64px;
+            padding: 36px 24px 64px;
         }
 
         .header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 24px;
+            margin-bottom: 30px;
         }
 
         .title {
-            font-size: 28px;
-            font-weight: 700;
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--text-pure);
+            letter-spacing: -0.02em;
         }
 
         .subtitle {
-            color: var(--text-muted);
+            color: var(--text-secondary);
             margin-top: 6px;
             font-size: 14px;
         }
 
         .back-btn {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            color: var(--text);
-            padding: 10px 16px;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-card);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 12px;
             text-decoration: none;
+            font-size: 13px;
             font-weight: 600;
             transition: all 0.2s ease;
         }
 
         .back-btn:hover {
-            background: rgba(99, 102, 241, 0.2);
-            border-color: var(--primary);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 16px;
-        }
-
-        .card {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 18px 20px;
-        }
-
-        .card h3 {
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-        }
-
-        .card ul {
-            padding-left: 16px;
-            line-height: 1.6;
-        }
-
-        .tip {
-            margin-top: 18px;
-            padding: 14px 16px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            font-size: 13px;
-            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
         }
 
         .section-header {
             font-size: 14px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: var(--text-muted);
+            letter-spacing: 0.8px;
+            color: var(--accent-mint);
             margin: 28px 0 16px;
             display: flex;
             align-items: center;
@@ -475,91 +449,79 @@ HELP_TEMPLATE = """
 
         .model-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
             margin-bottom: 24px;
         }
 
         .model-card {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
             border-radius: 18px;
-            padding: 22px 24px;
-            position: relative;
-            transition: all 0.3s ease;
+            padding: 24px;
+            transition: all 0.25s ease;
         }
 
         .model-card:hover {
-            border-color: var(--primary);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        .model-card.local {
-            border-left: 4px solid var(--success);
-        }
-
-        .model-card.cloud {
-            border-left: 4px solid var(--accent);
+            border-color: rgba(0, 245, 155, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 245, 155, 0.1);
         }
 
         .model-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            display: inline-block;
             padding: 4px 10px;
             border-radius: 20px;
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 12px;
         }
 
         .model-tag.local {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: rgba(0, 245, 155, 0.15);
+            color: #00f59b;
+            border: 1px solid rgba(0, 245, 155, 0.3);
         }
 
         .model-tag.cloud {
-            background: rgba(6, 182, 212, 0.2);
-            color: #22d3ee;
-            border: 1px solid rgba(6, 182, 212, 0.3);
+            background: rgba(0, 229, 255, 0.15);
+            color: #00e5ff;
+            border: 1px solid rgba(0, 229, 255, 0.3);
         }
 
         .model-card h3 {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 700;
-            color: var(--text);
+            color: var(--text-pure);
             margin-bottom: 8px;
-            text-transform: none;
-            letter-spacing: 0;
         }
 
         .model-card p {
             font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.5;
+            color: var(--text-secondary);
+            line-height: 1.55;
             margin-bottom: 16px;
         }
 
         .syntax-box {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--border-card);
             border-radius: 10px;
             padding: 10px 14px;
             margin-bottom: 14px;
-            font-size: 12px;
+            font-size: 12.5px;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
         .syntax-box code {
-            color: #a5b4fc;
+            color: #8affcf;
             font-weight: 700;
-            background: rgba(99, 102, 241, 0.25);
+            background: rgba(0, 245, 155, 0.15);
             padding: 3px 8px;
             border-radius: 6px;
             font-family: 'JetBrains Mono', monospace;
@@ -575,24 +537,22 @@ HELP_TEMPLATE = """
 
         .cmd-list li {
             padding: 6px 0;
-            color: var(--text);
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
+            color: var(--text-primary);
         }
 
         .cmd-list li code {
-            color: #e2e8f0;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 2px 6px;
-            border-radius: 4px;
+            color: #f1f5f9;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 7px;
+            border-radius: 6px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
+            border: 1px solid var(--border-subtle);
         }
 
         .hybrid-banner {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: linear-gradient(135deg, rgba(0, 245, 155, 0.1) 0%, rgba(0, 229, 255, 0.05) 100%);
+            border: 1px solid rgba(0, 245, 155, 0.25);
             border-radius: 16px;
             padding: 18px 22px;
             margin-bottom: 24px;
@@ -601,41 +561,41 @@ HELP_TEMPLATE = """
             gap: 16px;
         }
 
-        .hybrid-icon {
-            font-size: 26px;
-            flex-shrink: 0;
-            margin-top: 2px;
+        .hybrid-icon { font-size: 26px; }
+        .hybrid-text h4 { font-size: 15px; font-weight: 700; color: #8affcf; margin-bottom: 4px; }
+        .hybrid-text p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
         }
 
-        .hybrid-text h4 {
-            font-size: 15px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: #c7d2fe;
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 18px;
         }
 
-        .hybrid-text p {
-            font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.5;
-            margin: 0;
+        .card h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-pure);
+            margin-bottom: 12px;
         }
 
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-            }
-            .model-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        .card ul { list-style: none; }
+        .card li { font-size: 12.5px; color: var(--text-secondary); padding: 5px 0; }
+        .card li::before { content: "• "; color: var(--accent-mint); font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="bg-animation"></div>
-    <div class="grid-overlay"></div>
+    <div class="aurora-bg">
+        <div class="aurora-orb aurora-orb-1"></div>
+        <div class="aurora-orb aurora-orb-2"></div>
+    </div>
+    <div class="matrix-overlay"></div>
 
     <div class="page">
         <div class="header">
@@ -730,20 +690,11 @@ HELP_TEMPLATE = """
                     <li>Search tickets for "login error"</li>
                 </ul>
             </div>
-
-            <div class="card">
-                <h3>Get Suggestions</h3>
-                <ul>
-                    <li>Need suggestion</li>
-                    <li>I need help</li>
-                    <li>Fix my issue</li>
-                </ul>
-                <div class="tip">After you describe the issue, the assistant will analyze it, show web + StackOverflow results, and ask if it is fixed.</div>
-            </div>
         </div>
     </div>
 </body>
 </html>
+
 """
 
 HTML_TEMPLATE = """
@@ -752,39 +703,40 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tandion Bug Assistant | AI-Powered Issue Management</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Tandion Bug Assistant | Next-Gen AI Issue Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
-            --dark-bg: #070a13;
-            --dark-surface: #0f172a;
-            --dark-card: #141f36;
-            --dark-border: rgba(255, 255, 255, 0.08);
-            --dark-border-subtle: rgba(255, 255, 255, 0.04);
+            /* 2026 Cyber Obsidian & Bioluminescent Emerald Palette */
+            --bg-void: #06070a;
+            --bg-surface: #0c0e14;
+            --bg-card: rgba(18, 22, 32, 0.65);
+            --bg-card-hover: rgba(26, 32, 48, 0.75);
             
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --primary-glow: rgba(99, 102, 241, 0.35);
-            --secondary: #8b5cf6;
-            --accent: #06b6d4;
-            --accent-glow: rgba(6, 182, 212, 0.25);
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-card: rgba(255, 255, 255, 0.09);
+            --border-highlight: rgba(0, 245, 155, 0.4);
             
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --text-dim: #64748b;
+            /* High-energy Trending Accents */
+            --accent-mint: #00f59b;
+            --accent-mint-glow: rgba(0, 245, 155, 0.35);
+            --accent-cyan: #00e5ff;
+            --accent-cyan-glow: rgba(0, 229, 255, 0.3);
+            --accent-amber: #ffb800;
+            --accent-rose: #ff3366;
+            --accent-violet: #9d4edd;
             
-            --glass-bg: rgba(15, 23, 42, 0.72);
-            --glass-card: rgba(20, 31, 54, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-hover: rgba(255, 255, 255, 0.06);
+            /* Text Hierarchy */
+            --text-pure: #ffffff;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
             
-            --sidebar-width: 280px;
-            --header-height: 64px;
-            --transition-smooth: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            /* Layout & Transitions */
+            --sidebar-w: 275px;
+            --header-h: 64px;
+            --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
         }
         
         * {
@@ -794,46 +746,99 @@ HTML_TEMPLATE = """
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--dark-bg);
-            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-void);
+            color: var(--text-primary);
             height: 100vh;
             overflow: hidden;
-            letter-spacing: -0.01em;
+            letter-spacing: -0.015em;
         }
         
-        /* Modern Ambient Background Mesh */
-        .bg-mesh {
+        /* 🌌 Fluid Living Aurora Animations (Floating Mesh Orbs) */
+        .aurora-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -2;
-            background: 
-                radial-gradient(circle at 10% 90%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
-                radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.16) 0%, transparent 45%),
-                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 55%),
-                var(--dark-bg);
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 100%, #0a0d16 0%, #06070a 100%);
         }
         
-        .grid-mesh {
+        .aurora-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.35;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            will-change: transform;
+        }
+        
+        .aurora-orb-1 {
+            width: 550px;
+            height: 550px;
+            background: radial-gradient(circle, #00f59b 0%, rgba(0, 245, 155, 0) 70%);
+            top: -100px;
+            left: 15%;
+            animation: orbFloat1 22s infinite ease-in-out alternate;
+        }
+        
+        .aurora-orb-2 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, #00b4d8 0%, rgba(0, 180, 216, 0) 70%);
+            bottom: -150px;
+            right: 10%;
+            animation: orbFloat2 28s infinite ease-in-out alternate;
+        }
+        
+        .aurora-orb-3 {
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, #7209b7 0%, rgba(114, 9, 183, 0) 70%);
+            top: 40%;
+            left: 55%;
+            opacity: 0.25;
+            animation: orbFloat3 25s infinite ease-in-out alternate;
+        }
+        
+        @keyframes orbFloat1 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(120px, 80px) scale(1.15); }
+            100% { transform: translate(-80px, 140px) scale(0.95); }
+        }
+        
+        @keyframes orbFloat2 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-140px, -90px) scale(1.2); }
+            100% { transform: translate(90px, -130px) scale(0.9); }
+        }
+        
+        @keyframes orbFloat3 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-100px, 120px) scale(1.1); }
+            100% { transform: translate(110px, -70px) scale(0.85); }
+        }
+        
+        /* Modern Micro Dot Grid Matrix */
+        .matrix-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -1;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 44px 44px;
-            mask-image: radial-gradient(circle at 50% 50%, black 50%, transparent 95%);
-            -webkit-mask-image: radial-gradient(circle at 50% 50%, black 50%, transparent 95%);
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 32px 32px;
+            opacity: 0.6;
+            mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 95%);
+            -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 95%);
         }
         
-        /* Layout Structure */
-        .app-container {
+        /* App Layout Container */
+        .app-shell {
             display: flex;
             height: 100vh;
             width: 100%;
@@ -841,22 +846,22 @@ HTML_TEMPLATE = """
             overflow: hidden;
         }
         
-        /* Sidebar Navigation */
+        /* Glass Sidebar */
         .sidebar {
-            width: var(--sidebar-width);
-            background: var(--glass-bg);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-right: 1px solid var(--glass-border);
+            width: var(--sidebar-w);
+            background: rgba(10, 13, 20, 0.75);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-right: 1px solid var(--border-subtle);
             display: flex;
             flex-direction: column;
             padding: 20px 16px;
-            transition: var(--transition-smooth);
+            transition: var(--ease-spring) 0.3s;
             z-index: 40;
             flex-shrink: 0;
         }
         
-        .app-container.sidebar-collapsed .sidebar {
+        .app-shell.sidebar-collapsed .sidebar {
             width: 0;
             padding: 0;
             opacity: 0;
@@ -865,290 +870,289 @@ HTML_TEMPLATE = """
             pointer-events: none;
         }
         
-        .sidebar-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 22px;
-            padding: 0 4px;
-        }
-        
-        .logo-wrap {
+        .sidebar-brand {
             display: flex;
             align-items: center;
             gap: 12px;
             text-decoration: none;
-            color: inherit;
+            margin-bottom: 24px;
+            padding: 2px 4px;
         }
         
-        .logo-badge {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        .brand-gem {
+            width: 38px;
+            height: 38px;
             border-radius: 12px;
+            background: linear-gradient(135deg, #00f59b 0%, #00b4d8 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 0 16px var(--primary-glow);
+            font-size: 19px;
+            box-shadow: 0 0 20px var(--accent-mint-glow);
+            transition: transform 0.25s var(--ease-spring);
             flex-shrink: 0;
-            transition: transform 0.2s ease;
         }
         
-        .logo-wrap:hover .logo-badge {
-            transform: scale(1.05);
+        .sidebar-brand:hover .brand-gem {
+            transform: scale(1.08) rotate(4deg);
         }
         
-        .logo-text {
+        .brand-name {
             font-size: 16px;
+            font-weight: 800;
+            color: var(--text-pure);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+        
+        .brand-badge {
+            font-size: 10px;
             font-weight: 700;
-            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1.2;
-        }
-        
-        .logo-sub {
-            font-size: 11px;
-            font-weight: 500;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-        }
-        
-        /* Section Dividers */
-        .sidebar-section {
-            margin-bottom: 20px;
-        }
-        
-        .section-label {
-            font-size: 11px;
-            font-weight: 600;
+            color: var(--accent-mint);
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            color: var(--text-dim);
-            margin-bottom: 10px;
-            padding: 0 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
         
-        /* Status Cards */
-        .status-box {
-            background: var(--glass-card);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 10px 12px;
+        .sidebar-nav-title {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin: 0 6px 10px;
+        }
+        
+        /* Runtime Engine Glass Cards */
+        .engine-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 12px;
             margin-bottom: 8px;
-            transition: var(--transition-smooth);
+            transition: all 0.25s var(--ease-spring);
+            position: relative;
+            overflow: hidden;
         }
         
-        .status-box:hover {
-            border-color: rgba(255, 255, 255, 0.14);
-            background: rgba(25, 38, 66, 0.7);
+        .engine-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
         }
         
-        .status-row {
+        .engine-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 4px;
         }
         
-        .status-title {
+        .engine-label {
             display: flex;
             align-items: center;
             gap: 8px;
             font-size: 13px;
             font-weight: 600;
-            color: var(--text-main);
+            color: var(--text-primary);
         }
         
-        .status-dot-ring {
+        /* ⚡ Radar Pulse Ping Indicator */
+        .radar-dot-wrap {
             position: relative;
             width: 8px;
             height: 8px;
-            display: inline-block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .status-dot {
+        .radar-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--success);
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
-            display: block;
-            transition: var(--transition-smooth);
+            background: var(--accent-mint);
+            box-shadow: 0 0 10px var(--accent-mint-glow);
+            z-index: 2;
         }
         
-        .status-dot.loading {
-            background: var(--warning);
-            box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
-            animation: pulse-dot 1.5s infinite;
+        .radar-ping {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: var(--accent-mint);
+            opacity: 0.8;
+            animation: radarPulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
         
-        .status-dot.offline {
-            background: var(--danger);
-            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+        @keyframes radarPulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            70% { transform: scale(3); opacity: 0; }
+            100% { transform: scale(3.5); opacity: 0; }
         }
         
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(1.2); }
+        .radar-dot.loading {
+            background: var(--accent-amber);
+            box-shadow: 0 0 10px rgba(255, 184, 0, 0.6);
         }
         
-        .pill-badge {
+        .radar-dot.offline {
+            background: var(--accent-rose);
+            box-shadow: 0 0 10px rgba(255, 51, 102, 0.6);
+        }
+        
+        .engine-chip {
             font-size: 10px;
-            font-weight: 600;
+            font-weight: 700;
             padding: 2px 7px;
             border-radius: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.3px;
+            font-family: 'JetBrains Mono', monospace;
         }
         
-        .pill-badge.local {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.25);
+        .engine-chip.mint {
+            background: rgba(0, 245, 155, 0.14);
+            color: #00f59b;
+            border: 1px solid rgba(0, 245, 155, 0.25);
         }
         
-        .pill-badge.cloud {
-            background: rgba(6, 182, 212, 0.15);
-            color: #22d3ee;
-            border: 1px solid rgba(6, 182, 212, 0.25);
+        .engine-chip.cyan {
+            background: rgba(0, 229, 255, 0.14);
+            color: #00e5ff;
+            border: 1px solid rgba(0, 229, 255, 0.25);
         }
         
-        .status-desc {
+        .engine-desc {
             font-size: 11px;
-            color: var(--text-muted);
-            line-height: 1.3;
+            color: var(--text-secondary);
+            line-height: 1.35;
         }
         
-        /* Quick Action List */
-        .action-list {
+        /* Action Buttons */
+        .sidebar-actions {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            margin-top: 14px;
         }
         
-        .action-item-btn {
+        .nav-link-btn {
             display: flex;
             align-items: center;
             gap: 10px;
             padding: 9px 12px;
             background: transparent;
             border: 1px solid transparent;
-            border-radius: 10px;
-            color: var(--text-muted);
+            border-radius: 12px;
+            color: var(--text-secondary);
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             text-align: left;
-            transition: var(--transition-smooth);
+            transition: all 0.2s var(--ease-spring);
             text-decoration: none;
             width: 100%;
         }
         
-        .action-item-btn:hover {
-            background: var(--glass-hover);
-            color: var(--text-main);
-            border-color: var(--glass-border);
+        .nav-link-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-pure);
+            border-color: var(--border-subtle);
             transform: translateX(3px);
         }
         
-        .action-item-btn.help-btn {
-            background: rgba(99, 102, 241, 0.12);
-            color: #c7d2fe;
-            border-color: rgba(99, 102, 241, 0.25);
+        .nav-link-btn.highlight-link {
+            background: linear-gradient(135deg, rgba(0, 245, 155, 0.1) 0%, rgba(0, 229, 255, 0.05) 100%);
+            color: #8affcf;
+            border-color: rgba(0, 245, 155, 0.2);
             font-weight: 600;
         }
         
-        .action-item-btn.help-btn:hover {
-            background: rgba(99, 102, 241, 0.22);
+        .nav-link-btn.highlight-link:hover {
+            background: linear-gradient(135deg, rgba(0, 245, 155, 0.18) 0%, rgba(0, 229, 255, 0.1) 100%);
             color: #ffffff;
-            border-color: rgba(99, 102, 241, 0.45);
+            border-color: rgba(0, 245, 155, 0.4);
+            box-shadow: 0 0 16px rgba(0, 245, 155, 0.15);
         }
         
-        .action-icon {
+        .link-icon {
             font-size: 15px;
-            flex-shrink: 0;
             width: 20px;
             text-align: center;
         }
         
-        /* Stats Ribbon */
-        .sidebar-bottom {
+        /* Footer Metrics */
+        .sidebar-foot {
             margin-top: auto;
             padding-top: 14px;
-            border-top: 1px solid var(--dark-border-subtle);
+            border-top: 1px solid var(--border-subtle);
         }
         
-        .stats-ribbon {
+        .metric-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
         }
         
-        .stat-card {
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid var(--dark-border-subtle);
+        .metric-cell {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-subtle);
             border-radius: 10px;
             padding: 8px 10px;
             text-align: center;
         }
         
-        .stat-num {
+        .metric-val {
             font-size: 15px;
             font-weight: 700;
-            color: var(--text-main);
+            color: var(--text-pure);
             font-family: 'JetBrains Mono', monospace;
         }
         
-        .stat-sub {
+        .metric-label {
             font-size: 10px;
-            color: var(--text-dim);
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
             margin-top: 2px;
         }
         
-        /* Main Workspace Container */
-        .workspace {
+        /* Main Chat Workspace */
+        .workspace-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
             height: 100vh;
             min-width: 0;
             position: relative;
-            background: transparent;
         }
         
-        /* Header / Navigation Bar */
-        .top-navbar {
-            height: var(--header-height);
+        /* Header Navigation */
+        .workspace-header {
+            height: var(--header-h);
             padding: 0 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid var(--glass-border);
-            background: rgba(7, 10, 19, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-subtle);
+            background: rgba(6, 7, 10, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             z-index: 30;
             flex-shrink: 0;
         }
         
-        .navbar-left {
+        .header-left-tools {
             display: flex;
             align-items: center;
             gap: 16px;
         }
         
-        .toggle-btn {
-            background: var(--glass-card);
-            border: 1px solid var(--glass-border);
-            color: var(--text-muted);
+        .icon-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            color: var(--text-secondary);
             width: 36px;
             height: 36px;
             border-radius: 10px;
@@ -1157,272 +1161,274 @@ HTML_TEMPLATE = """
             justify-content: center;
             cursor: pointer;
             font-size: 16px;
-            transition: var(--transition-smooth);
+            transition: all 0.2s var(--ease-spring);
         }
         
-        .toggle-btn:hover {
-            color: var(--text-main);
-            background: var(--glass-hover);
-            border-color: rgba(255, 255, 255, 0.15);
+        .icon-toggle-btn:hover {
+            color: var(--text-pure);
+            border-color: rgba(255, 255, 255, 0.2);
+            background: var(--bg-card-hover);
         }
         
-        /* OpenWebUI / LibreChat Style Segmented Model Switcher */
-        .mode-segmented-control {
+        /* 🎛️ Cyber Segmented Mode Switcher */
+        .cyber-segmented-group {
             display: flex;
             align-items: center;
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid var(--glass-border);
+            background: rgba(14, 18, 27, 0.85);
+            border: 1px solid var(--border-card);
             padding: 3px;
-            border-radius: 12px;
+            border-radius: 14px;
             gap: 2px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         }
         
-        .mode-pill-btn {
+        .cyber-pill {
             background: transparent;
             border: none;
-            color: var(--text-muted);
+            color: var(--text-secondary);
             font-family: inherit;
             font-size: 12px;
             font-weight: 500;
-            padding: 5px 12px;
-            border-radius: 8px;
+            padding: 6px 14px;
+            border-radius: 10px;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 6px;
-            transition: var(--transition-smooth);
+            transition: all 0.25s var(--ease-spring);
             white-space: nowrap;
         }
         
-        .mode-pill-btn:hover {
-            color: var(--text-main);
+        .cyber-pill:hover {
+            color: var(--text-pure);
             background: rgba(255, 255, 255, 0.04);
         }
         
-        .mode-pill-btn.active {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%);
-            color: #ffffff;
-            font-weight: 600;
-            box-shadow: 0 2px 8px var(--primary-glow);
+        .cyber-pill.active {
+            background: linear-gradient(135deg, rgba(0, 245, 155, 0.95) 0%, rgba(0, 200, 140, 0.95) 100%);
+            color: #04100b;
+            font-weight: 700;
+            box-shadow: 0 2px 14px var(--accent-mint-glow);
         }
         
-        .mode-pill-btn.active.mode-local {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.85) 0%, rgba(5, 150, 105, 0.85) 100%);
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        .cyber-pill.active.mode-local {
+            background: linear-gradient(135deg, #00f59b 0%, #00b4d8 100%);
+            color: #04100b;
+            box-shadow: 0 2px 14px var(--accent-mint-glow);
         }
         
-        .mode-pill-btn.active.mode-cloud {
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.85) 0%, rgba(2, 132, 199, 0.85) 100%);
-            box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+        .cyber-pill.active.mode-cloud {
+            background: linear-gradient(135deg, #00e5ff 0%, #3a86ff 100%);
+            color: #020b14;
+            box-shadow: 0 2px 14px var(--accent-cyan-glow);
         }
         
-        .navbar-right {
+        .header-right-tools {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         
-        .nav-tool-btn {
-            background: var(--glass-card);
-            border: 1px solid var(--glass-border);
-            color: var(--text-muted);
-            padding: 6px 12px;
+        .tool-pill-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            color: var(--text-secondary);
+            padding: 6px 13px;
             border-radius: 10px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 500;
             display: flex;
             align-items: center;
             gap: 6px;
             cursor: pointer;
             text-decoration: none;
-            transition: var(--transition-smooth);
+            transition: all 0.2s var(--ease-spring);
         }
         
-        .nav-tool-btn:hover {
-            color: var(--text-main);
-            background: var(--glass-hover);
-            border-color: rgba(255, 255, 255, 0.15);
+        .tool-pill-btn:hover {
+            color: var(--text-pure);
+            background: var(--bg-card-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
         }
         
-        /* Chat Conversation Feed */
-        .chat-feed {
+        /* Chat Feed */
+        .chat-scrollway {
             flex: 1;
             overflow-y: auto;
-            padding: 24px 24px 120px;
+            padding: 28px 24px 130px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 22px;
             scroll-behavior: smooth;
         }
         
-        .chat-feed::-webkit-scrollbar {
-            width: 6px;
+        .chat-scrollway::-webkit-scrollbar {
+            width: 5px;
         }
         
-        .chat-feed::-webkit-scrollbar-track {
+        .chat-scrollway::-webkit-scrollbar-track {
             background: transparent;
         }
         
-        .chat-feed::-webkit-scrollbar-thumb {
+        .chat-scrollway::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 4px;
         }
         
-        .chat-feed::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        
-        /* Modern Welcome Hero Card */
-        .welcome-hero {
+        /* ⚡ Hero Welcome Section */
+        .welcome-center {
             max-width: 820px;
             margin: auto;
-            padding: 40px 24px 20px;
+            padding: 30px 20px 10px;
             text-align: center;
-            animation: fadeIn 0.4s ease forwards;
+            animation: heroFadeIn 0.5s var(--ease-spring) forwards;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        @keyframes heroFadeIn {
+            from { opacity: 0; transform: translateY(14px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
-        .hero-avatar-glow {
-            width: 68px;
-            height: 68px;
-            margin: 0 auto 20px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 22px;
+        /* Levitating Animated Hero Badge */
+        .floating-hero-avatar {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 22px;
+            background: linear-gradient(135deg, #00f59b 0%, #00b4d8 50%, #7209b7 100%);
+            border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            box-shadow: 0 0 32px var(--primary-glow);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-size: 34px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 35px var(--accent-mint-glow);
+            animation: levitateBadge 4s ease-in-out infinite alternate;
         }
         
-        .hero-title {
-            font-size: 30px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
+        @keyframes levitateBadge {
+            0% { transform: translateY(0) rotate(0deg); box-shadow: 0 0 25px var(--accent-mint-glow); }
+            50% { transform: translateY(-7px) rotate(2deg); box-shadow: 0 10px 40px rgba(0, 229, 255, 0.45); }
+            100% { transform: translateY(-3px) rotate(-1deg); box-shadow: 0 5px 30px var(--accent-mint-glow); }
+        }
+        
+        .hero-head-title {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.025em;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+            background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         
-        .hero-subtitle {
-            font-size: 14px;
-            color: var(--text-muted);
+        .hero-head-desc {
+            font-size: 14.5px;
+            color: var(--text-secondary);
             max-width: 580px;
             margin: 0 auto 32px;
             line-height: 1.6;
         }
         
-        /* Interactive Prompt Cards Grid */
-        .hero-cards-grid {
+        /* 🎴 Shimmering Interactive Prompt Cards */
+        .prompt-cards-matrix {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 14px;
             text-align: left;
-            margin-top: 10px;
         }
         
-        .prompt-card {
-            background: var(--glass-card);
-            border: 1px solid var(--glass-border);
-            border-radius: 14px;
-            padding: 16px;
+        .interactive-prompt-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 18px;
             cursor: pointer;
-            transition: var(--transition-smooth);
+            transition: all 0.3s var(--ease-spring);
             position: relative;
             overflow: hidden;
         }
         
-        .prompt-card::before {
+        /* Card Light Shimmer Sweep */
+        .interactive-prompt-card::after {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
+            left: -100%;
+            width: 50%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
-            opacity: 0;
-            transition: opacity 0.25s ease;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.6s ease;
         }
         
-        .prompt-card:hover {
-            border-color: rgba(99, 102, 241, 0.4);
-            transform: translateY(-2px);
-            background: rgba(22, 34, 60, 0.8);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        .interactive-prompt-card:hover::after {
+            left: 200%;
         }
         
-        .prompt-card:hover::before {
-            opacity: 1;
+        .interactive-prompt-card:hover {
+            border-color: var(--border-highlight);
+            transform: translateY(-4px);
+            background: var(--bg-card-hover);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 245, 155, 0.15);
         }
         
-        .prompt-card-header {
+        .card-top-row {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 8px;
-            position: relative;
-            z-index: 1;
         }
         
-        .prompt-card-icon {
+        .card-gem-icon {
             font-size: 18px;
         }
         
-        .prompt-card-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-main);
+        .card-caption {
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--text-pure);
         }
         
-        .prompt-card-desc {
-            font-size: 12px;
-            color: var(--text-muted);
+        .card-explainer {
+            font-size: 12.5px;
+            color: var(--text-secondary);
             line-height: 1.45;
-            position: relative;
-            z-index: 1;
         }
         
-        .prompt-card-tag {
+        .card-query-chip {
             display: inline-block;
-            font-size: 10px;
+            font-size: 10.5px;
             font-weight: 600;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-top: 10px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-top: 12px;
             font-family: 'JetBrains Mono', monospace;
-            background: rgba(0, 0, 0, 0.3);
-            color: #a5b4fc;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-            z-index: 1;
+            background: rgba(0, 0, 0, 0.45);
+            color: #8affcf;
+            border: 1px solid rgba(0, 245, 155, 0.2);
         }
         
-        /* Message Rows */
-        .message-row {
+        /* Message Stream Rows */
+        .stream-message-row {
             display: flex;
             gap: 14px;
             max-width: 860px;
             width: 100%;
             margin: 0 auto;
-            animation: messageSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: messageSpringIn 0.3s var(--ease-spring) forwards;
         }
         
-        @keyframes messageSlideIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes messageSpringIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         
-        .message-row.user {
+        .stream-message-row.user {
             justify-content: flex-end;
         }
         
-        .avatar-wrap {
+        .msg-avatar {
             width: 36px;
             height: 36px;
             border-radius: 12px;
@@ -1433,32 +1439,33 @@ HTML_TEMPLATE = """
             flex-shrink: 0;
         }
         
-        .message-row.assistant .avatar-wrap {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: #ffffff;
-            box-shadow: 0 0 12px var(--primary-glow);
+        .stream-message-row.assistant .msg-avatar {
+            background: linear-gradient(135deg, #00f59b 0%, #00b4d8 100%);
+            color: #04100b;
+            font-weight: 800;
+            box-shadow: 0 0 16px var(--accent-mint-glow);
         }
         
-        .message-row.user .avatar-wrap {
+        .stream-message-row.user .msg-avatar {
             background: rgba(255, 255, 255, 0.08);
-            border: 1px solid var(--glass-border);
+            border: 1px solid var(--border-card);
             order: 2;
         }
         
-        .bubble-wrapper {
+        .msg-content-wrapper {
             max-width: calc(100% - 50px);
             display: flex;
             flex-direction: column;
         }
         
-        .message-row.user .bubble-wrapper {
+        .stream-message-row.user .msg-content-wrapper {
             align-items: flex-end;
             order: 1;
         }
         
-        /* User & Assistant Bubble Styling */
-        .msg-bubble {
-            border-radius: 16px;
+        /* Message Bubbles */
+        .speech-bubble {
+            border-radius: 18px;
             padding: 14px 18px;
             font-size: 14px;
             line-height: 1.6;
@@ -1466,60 +1473,60 @@ HTML_TEMPLATE = """
             position: relative;
         }
         
-        .message-row.user .msg-bubble {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-            color: #ffffff;
+        .stream-message-row.user .speech-bubble {
+            background: linear-gradient(135deg, #00f59b 0%, #00b4d8 100%);
+            color: #04100b;
+            font-weight: 500;
             border-bottom-right-radius: 4px;
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 6px 20px rgba(0, 245, 155, 0.25);
         }
         
-        .message-row.assistant .msg-bubble {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+        .stream-message-row.assistant .speech-bubble {
+            background: rgba(14, 18, 27, 0.85);
+            border: 1px solid var(--border-card);
             border-bottom-left-radius: 4px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-            color: var(--text-main);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            color: var(--text-primary);
         }
         
-        /* Message Footer Toolbar */
-        .msg-meta-bar {
+        /* Message Action Toolbar */
+        .msg-action-toolbar {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-top: 6px;
             padding: 0 4px;
             font-size: 11px;
-            color: var(--text-dim);
+            color: var(--text-muted);
         }
         
-        .model-chip {
+        .origin-badge {
             display: inline-flex;
             align-items: center;
             gap: 4px;
             padding: 2px 8px;
             border-radius: 6px;
             font-size: 10.5px;
-            font-weight: 600;
-            letter-spacing: 0.3px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
         }
         
-        .model-chip.local {
-            background: rgba(16, 185, 129, 0.12);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.22);
+        .origin-badge.local {
+            background: rgba(0, 245, 155, 0.12);
+            color: #00f59b;
+            border: 1px solid rgba(0, 245, 155, 0.25);
         }
         
-        .model-chip.cloud {
-            background: rgba(6, 182, 212, 0.12);
-            color: #22d3ee;
-            border: 1px solid rgba(6, 182, 212, 0.22);
+        .origin-badge.cloud {
+            background: rgba(0, 229, 255, 0.12);
+            color: #00e5ff;
+            border: 1px solid rgba(0, 229, 255, 0.25);
         }
         
-        .copy-msg-btn {
+        .copy-action-btn {
             background: transparent;
             border: none;
-            color: var(--text-dim);
+            color: var(--text-muted);
             cursor: pointer;
             font-size: 11px;
             display: inline-flex;
@@ -1527,76 +1534,64 @@ HTML_TEMPLATE = """
             gap: 4px;
             padding: 2px 6px;
             border-radius: 4px;
-            transition: var(--transition-smooth);
+            transition: all 0.2s ease;
         }
         
-        .copy-msg-btn:hover {
-            color: var(--text-main);
+        .copy-action-btn:hover {
+            color: var(--text-pure);
             background: rgba(255, 255, 255, 0.08);
         }
         
-        /* Markdown & Code Block Styling */
-        .msg-bubble p {
-            margin-bottom: 12px;
-        }
+        /* Code Block Styling */
+        .speech-bubble p { margin-bottom: 12px; }
+        .speech-bubble p:last-child { margin-bottom: 0; }
+        .speech-bubble ul, .speech-bubble ol { margin: 8px 0 12px 20px; }
+        .speech-bubble li { margin-bottom: 4px; }
         
-        .msg-bubble p:last-child {
-            margin-bottom: 0;
-        }
-        
-        .msg-bubble ul, .msg-bubble ol {
-            margin: 8px 0 12px 20px;
-        }
-        
-        .msg-bubble li {
-            margin-bottom: 4px;
-        }
-        
-        .msg-bubble blockquote {
-            border-left: 3px solid var(--primary);
+        .speech-bubble blockquote {
+            border-left: 3px solid var(--accent-mint);
             padding: 6px 14px;
             margin: 10px 0;
-            background: rgba(99, 102, 241, 0.08);
+            background: rgba(0, 245, 155, 0.06);
             border-radius: 0 8px 8px 0;
-            color: #cbd5e1;
+            color: #d1fae5;
         }
         
-        .msg-bubble code {
+        .speech-bubble code {
             font-family: 'JetBrains Mono', monospace;
             font-size: 12.5px;
-            background: rgba(0, 0, 0, 0.35);
+            background: rgba(0, 0, 0, 0.45);
             padding: 2px 6px;
             border-radius: 6px;
-            color: #93c5fd;
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #6ee7b7;
+            border: 1px solid rgba(0, 245, 155, 0.15);
         }
         
-        /* Advanced Code Block Container */
-        .code-block-wrapper {
+        .code-container-box {
             margin: 12px 0;
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
-            border: 1px solid var(--glass-border);
-            background: rgba(5, 8, 16, 0.7);
+            border: 1px solid var(--border-card);
+            background: rgba(4, 6, 10, 0.85);
         }
         
-        .code-header {
+        .code-title-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 7px 14px;
-            background: rgba(15, 23, 42, 0.9);
-            border-bottom: 1px solid var(--glass-border);
+            background: rgba(16, 21, 32, 0.95);
+            border-bottom: 1px solid var(--border-subtle);
             font-size: 11px;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-family: 'JetBrains Mono', monospace;
             text-transform: uppercase;
         }
         
-        .copy-code-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: var(--text-muted);
+        .copy-terminal-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
             border-radius: 6px;
             padding: 2px 8px;
             font-size: 11px;
@@ -1604,130 +1599,123 @@ HTML_TEMPLATE = """
             display: flex;
             align-items: center;
             gap: 4px;
-            transition: var(--transition-smooth);
+            transition: all 0.2s ease;
         }
         
-        .copy-code-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            color: var(--text-main);
+        .copy-terminal-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-pure);
         }
         
-        .msg-bubble pre {
+        .speech-bubble pre {
             margin: 0;
             padding: 14px;
             overflow-x: auto;
             background: transparent;
         }
         
-        .msg-bubble pre code {
+        .speech-bubble pre code {
             background: transparent;
             padding: 0;
             border: none;
-            color: #e2e8f0;
+            color: #f1f5f9;
             font-size: 12.5px;
             line-height: 1.5;
         }
         
-        /* Table Styling */
-        .table-container {
+        .table-responsive-box {
             overflow-x: auto;
             margin: 12px 0;
-            border-radius: 10px;
-            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            border: 1px solid var(--border-card);
         }
         
-        .msg-bubble table {
+        .speech-bubble table {
             width: 100%;
             border-collapse: collapse;
             font-size: 12.5px;
         }
         
-        .msg-bubble th {
-            background: rgba(15, 23, 42, 0.9);
-            color: var(--text-main);
+        .speech-bubble th {
+            background: rgba(18, 24, 36, 0.95);
+            color: var(--text-pure);
             padding: 8px 12px;
             text-align: left;
-            border-bottom: 1px solid var(--glass-border);
-            font-weight: 600;
+            border-bottom: 1px solid var(--border-card);
+            font-weight: 700;
         }
         
-        .msg-bubble td {
+        .speech-bubble td {
             padding: 8px 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
         }
         
-        .msg-bubble tr:last-child td {
-            border-bottom: none;
-        }
+        .speech-bubble tr:last-child td { border-bottom: none; }
+        .speech-bubble tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
         
-        .msg-bubble tr:nth-child(even) {
-            background: rgba(255, 255, 255, 0.02);
-        }
-        
-        /* Typing Dots Indicator */
-        .typing-bubble {
+        /* Typing Wave Dots */
+        .typing-wave-bubble {
             display: inline-flex;
             align-items: center;
             gap: 5px;
             padding: 12px 16px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
             border-radius: 16px;
             border-bottom-left-radius: 4px;
         }
         
-        .typing-dot {
+        .wave-dot {
             width: 7px;
             height: 7px;
-            background: var(--primary);
+            background: var(--accent-mint);
             border-radius: 50%;
-            animation: typingBounce 1.4s infinite ease-in-out both;
+            animation: waveBounce 1.4s infinite ease-in-out both;
         }
         
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        .wave-dot:nth-child(1) { animation-delay: -0.32s; }
+        .wave-dot:nth-child(2) { animation-delay: -0.16s; }
         
-        @keyframes typingBounce {
-            0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
-            40% { transform: scale(1); opacity: 1; }
+        @keyframes waveBounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+            40% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 8px var(--accent-mint-glow); }
         }
         
-        .typing-cursor {
+        .streaming-cursor {
             display: inline-block;
             width: 7px;
             height: 15px;
-            background: var(--accent);
+            background: var(--accent-mint);
             margin-left: 4px;
             vertical-align: text-bottom;
-            animation: cursorBlink 0.9s infinite;
+            animation: blinkCursor 0.9s infinite;
         }
         
-        @keyframes cursorBlink {
+        @keyframes blinkCursor {
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
         }
         
-        /* Floating Command Deck / Input Box */
-        .command-deck {
+        /* 🕹️ Floating Cyber Command Console */
+        .console-dock {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
             padding: 0 24px 20px;
-            background: linear-gradient(to top, var(--dark-bg) 60%, rgba(7, 10, 19, 0.8) 85%, transparent 100%);
+            background: linear-gradient(to top, var(--bg-void) 65%, rgba(6, 7, 10, 0.8) 85%, transparent 100%);
             pointer-events: none;
             z-index: 25;
         }
         
-        .command-deck-inner {
+        .console-dock-inner {
             max-width: 860px;
             margin: 0 auto;
             pointer-events: auto;
         }
         
-        /* Mode Quick Selector Bar right above input */
-        .deck-mode-bar {
+        .dock-pill-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -1735,75 +1723,77 @@ HTML_TEMPLATE = """
             padding: 0 4px;
         }
         
-        .deck-mode-chips {
+        .dock-mode-chips {
             display: flex;
             align-items: center;
             gap: 6px;
         }
         
-        .deck-chip {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid var(--glass-border);
-            color: var(--text-dim);
+        .mode-chip-tag {
+            background: rgba(16, 21, 32, 0.7);
+            border: 1px solid var(--border-card);
+            color: var(--text-muted);
             font-size: 11px;
             font-weight: 500;
-            padding: 3px 9px;
+            padding: 3px 10px;
             border-radius: 20px;
             cursor: pointer;
-            transition: var(--transition-smooth);
+            transition: all 0.2s var(--ease-spring);
             display: flex;
             align-items: center;
             gap: 4px;
         }
         
-        .deck-chip:hover {
-            color: var(--text-main);
+        .mode-chip-tag:hover {
+            color: var(--text-pure);
+            border-color: rgba(255, 255, 255, 0.2);
             background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.15);
         }
         
-        .deck-chip.active {
-            color: #ffffff;
-            background: rgba(99, 102, 241, 0.3);
-            border-color: var(--primary);
-            font-weight: 600;
+        .mode-chip-tag.active {
+            color: #04100b;
+            background: var(--accent-mint);
+            border-color: var(--accent-mint);
+            font-weight: 700;
+            box-shadow: 0 0 12px var(--accent-mint-glow);
         }
         
-        .input-box-wrapper {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid var(--glass-border);
+        /* Input Box */
+        .cyber-input-wrapper {
+            background: rgba(14, 18, 28, 0.85);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--border-card);
             border-radius: 18px;
             padding: 6px 8px 6px 16px;
             display: flex;
             align-items: center;
             gap: 10px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-            transition: var(--transition-smooth);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s var(--ease-spring);
         }
         
-        .input-box-wrapper:focus-within {
-            border-color: rgba(99, 102, 241, 0.6);
-            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2), 0 0 0 2px rgba(99, 102, 241, 0.15);
+        .cyber-input-wrapper:focus-within {
+            border-color: rgba(0, 245, 155, 0.65);
+            box-shadow: 0 8px 32px rgba(0, 245, 155, 0.15), 0 0 0 2px rgba(0, 245, 155, 0.2);
         }
         
-        .composer-input {
+        .dock-input {
             flex: 1;
             background: transparent;
             border: none;
             outline: none;
-            color: var(--text-main);
+            color: var(--text-pure);
             font-size: 14px;
             font-family: inherit;
             padding: 8px 0;
         }
         
-        .composer-input::placeholder {
-            color: var(--text-dim);
+        .dock-input::placeholder {
+            color: var(--text-muted);
         }
         
-        .action-button {
+        .dock-action-btn {
             width: 38px;
             height: 38px;
             border-radius: 12px;
@@ -1813,143 +1803,145 @@ HTML_TEMPLATE = """
             align-items: center;
             justify-content: center;
             font-size: 16px;
-            transition: var(--transition-smooth);
+            transition: all 0.25s var(--ease-spring);
             flex-shrink: 0;
         }
         
-        .btn-attach {
-            background: var(--glass-hover);
-            color: var(--text-muted);
-            border: 1px solid var(--glass-border);
+        .btn-camera {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-card);
         }
         
-        .btn-attach:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: scale(1.04);
+        .btn-camera:hover {
+            color: var(--text-pure);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
         }
         
-        .btn-send {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-            color: #ffffff;
-            font-weight: 600;
+        .btn-launch {
+            background: linear-gradient(135deg, #00f59b 0%, #00b4d8 100%);
+            color: #04100b;
+            font-weight: 700;
             width: auto;
-            padding: 0 16px;
+            padding: 0 18px;
             gap: 6px;
-            font-size: 13px;
-            box-shadow: 0 2px 10px var(--primary-glow);
+            font-size: 13.5px;
+            box-shadow: 0 2px 14px var(--accent-mint-glow);
         }
         
-        .btn-send:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px var(--primary-glow);
+        .btn-launch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 22px var(--accent-mint-glow);
         }
         
-        .btn-send:disabled {
-            opacity: 0.5;
+        .btn-launch:disabled {
+            opacity: 0.45;
             cursor: not-allowed;
             transform: none;
         }
         
-        .btn-stop {
+        .btn-halt {
             display: none;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.35);
-            color: #fca5a5;
-            font-weight: 600;
+            background: rgba(255, 51, 102, 0.15);
+            border: 1px solid rgba(255, 51, 102, 0.35);
+            color: #ff99b3;
+            font-weight: 700;
             width: auto;
             padding: 0 14px;
             gap: 6px;
             font-size: 13px;
         }
         
-        .btn-stop.visible {
+        .btn-halt.visible {
             display: flex;
         }
         
-        .btn-stop:hover {
-            background: rgba(239, 68, 68, 0.25);
+        .btn-halt:hover {
+            background: rgba(255, 51, 102, 0.3);
             color: #ffffff;
         }
         
-        .stop-square {
+        .halt-box {
             width: 10px;
             height: 10px;
             background: currentColor;
             border-radius: 2px;
         }
         
-        /* Attachment Preview Chip */
-        .attach-tray {
+        /* Attachment Preview */
+        .dock-tray {
             display: none;
             align-items: center;
             gap: 8px;
             margin-bottom: 8px;
             padding: 6px 12px;
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid var(--glass-border);
+            background: rgba(14, 18, 28, 0.85);
+            border: 1px solid var(--border-card);
             border-radius: 12px;
             max-width: fit-content;
         }
         
-        .attach-tray.visible {
-            display: flex;
-        }
+        .dock-tray.visible { display: flex; }
         
-        .attach-thumb {
+        .tray-preview-img {
             width: 28px;
             height: 28px;
             border-radius: 6px;
             object-fit: cover;
-            border: 1px solid var(--glass-border);
+            border: 1px solid var(--border-card);
         }
         
-        .attach-name {
+        .tray-caption {
             font-size: 12px;
-            color: var(--text-muted);
+            color: var(--text-secondary);
             max-width: 220px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         
-        .attach-del-btn {
+        .tray-remove-btn {
             background: transparent;
             border: none;
-            color: var(--text-dim);
+            color: var(--text-muted);
             cursor: pointer;
             font-size: 14px;
             line-height: 1;
             padding: 2px;
-            border-radius: 4px;
         }
         
-        .attach-del-btn:hover {
-            color: var(--danger);
-        }
+        .tray-remove-btn:hover { color: var(--accent-rose); }
         
-        .deck-footer-hint {
+        .dock-shortcut-caption {
             text-align: center;
             font-size: 11px;
-            color: var(--text-dim);
+            color: var(--text-muted);
             margin-top: 6px;
         }
         
-        /* Mobile Overlay Backdrop */
-        .sidebar-overlay {
+        .dock-shortcut-caption kbd {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 1px 4px;
+            color: var(--text-secondary);
+        }
+        
+        /* Mobile Overlay */
+        .drawer-dimmer {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(6px);
             z-index: 35;
         }
         
-        /* Responsive Breakpoints */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -1957,235 +1949,226 @@ HTML_TEMPLATE = """
                 left: 0;
                 height: 100%;
                 transform: translateX(-100%);
-                box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+                box-shadow: 0 0 35px rgba(0, 0, 0, 0.8);
             }
             
-            .app-container.mobile-sidebar-open .sidebar {
+            .app-shell.mobile-drawer-open .sidebar {
                 transform: translateX(0);
             }
             
-            .app-container.mobile-sidebar-open .sidebar-overlay {
+            .app-shell.mobile-drawer-open .drawer-dimmer {
                 display: block;
             }
             
-            .mode-segmented-control {
-                display: none; /* Collapses to quick chips on mobile */
-            }
-            
-            .chat-feed {
-                padding: 16px 14px 130px;
-            }
-            
-            .command-deck {
-                padding: 0 12px 14px;
-            }
-            
-            .hero-cards-grid {
-                grid-template-columns: 1fr;
-            }
+            .cyber-segmented-group { display: none; }
+            .chat-scrollway { padding: 16px 14px 130px; }
+            .console-dock { padding: 0 12px 14px; }
+            .prompt-cards-matrix { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="bg-mesh"></div>
-    <div class="grid-mesh"></div>
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar(false)"></div>
+    <!-- 🌌 Living Aurora Background Orbs -->
+    <div class="aurora-bg">
+        <div class="aurora-orb aurora-orb-1"></div>
+        <div class="aurora-orb aurora-orb-2"></div>
+        <div class="aurora-orb aurora-orb-3"></div>
+    </div>
+    <div class="matrix-overlay"></div>
+    <div class="drawer-dimmer" id="drawerDimmer" onclick="toggleMobileSidebar(false)"></div>
     
-    <div class="app-container" id="appContainer">
+    <div class="app-shell" id="appShell">
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <a href="/" class="logo-wrap">
-                    <div class="logo-badge">⚡</div>
-                    <div>
-                        <div class="logo-text">Tandion</div>
-                        <div class="logo-sub">Bug Assistant</div>
-                    </div>
-                </a>
+            <a href="/" class="sidebar-brand">
+                <div class="brand-gem">⚡</div>
+                <div>
+                    <div class="brand-name">Tandion</div>
+                    <div class="brand-badge">Bug Assistant</div>
+                </div>
+            </a>
+            
+            <!-- Live Model Engines -->
+            <div class="sidebar-nav-title">AI Engines</div>
+            <div class="engine-card">
+                <div class="engine-header">
+                    <span class="engine-label">
+                        <span class="radar-dot-wrap">
+                            <span class="radar-dot" id="localDot"></span>
+                            <span class="radar-ping"></span>
+                        </span>
+                        Local Engine
+                    </span>
+                    <span class="engine-chip mint" id="localBadge">Gemma-2B</span>
+                </div>
+                <div class="engine-desc">100% Offline • Zero-latency CPU • Free</div>
             </div>
             
-            <!-- Live Model Status -->
-            <div class="sidebar-section">
-                <div class="section-label">AI Runtime Engines</div>
-                <div class="status-box">
-                    <div class="status-row">
-                        <span class="status-title">
-                            <span class="status-dot-ring"><span class="status-dot" id="localDot"></span></span>
-                            Local Engine
+            <div class="engine-card">
+                <div class="engine-header">
+                    <span class="engine-label">
+                        <span class="radar-dot-wrap">
+                            <span class="radar-dot" id="cloudDot"></span>
+                            <span class="radar-ping"></span>
                         </span>
-                        <span class="pill-badge local" id="localBadge">Gemma-2B</span>
-                    </div>
-                    <div class="status-desc">Private • 100% Offline CPU • Free</div>
+                        Cloud Engine
+                    </span>
+                    <span class="engine-chip cyan" id="cloudBadge">Gemini</span>
                 </div>
-                
-                <div class="status-box">
-                    <div class="status-row">
-                        <span class="status-title">
-                            <span class="status-dot-ring"><span class="status-dot" id="cloudDot"></span></span>
-                            Cloud Engine
-                        </span>
-                        <span class="pill-badge cloud" id="cloudBadge">Gemini</span>
-                    </div>
-                    <div class="status-desc">Deep Reasoning • Live Tools • Search</div>
-                </div>
+                <div class="engine-desc">Deep Reasoning • Live Tools • Search</div>
             </div>
             
             <!-- Quick Actions -->
-            <div class="sidebar-section">
-                <div class="section-label">Quick Actions</div>
-                <div class="action-list">
-                    <a href="/help" class="action-item-btn help-btn">
-                        <span class="action-icon">💡</span>
-                        <span>Help & Examples</span>
-                    </a>
-                    <button class="action-item-btn" onclick="quickAction('Show all open tickets')">
-                        <span class="action-icon">📋</span>
-                        <span>Open Tickets</span>
-                    </button>
-                    <button class="action-item-btn" onclick="quickAction('Show critical priority tickets')">
-                        <span class="action-icon">🚨</span>
-                        <span>Critical Issues</span>
-                    </button>
-                    <button class="action-item-btn" onclick="quickAction('Show high priority tickets')">
-                        <span class="action-icon">⚠️</span>
-                        <span>High Priority</span>
-                    </button>
-                    <button class="action-item-btn" onclick="quickAction('Show closed tickets')">
-                        <span class="action-icon">✅</span>
-                        <span>Closed Tickets</span>
-                    </button>
-                </div>
+            <div class="sidebar-nav-title" style="margin-top: 16px;">Quick Actions</div>
+            <div class="sidebar-actions">
+                <a href="/help" class="nav-link-btn highlight-link">
+                    <span class="link-icon">💡</span>
+                    <span>Help & Examples</span>
+                </a>
+                <button class="nav-link-btn" onclick="quickAction('Show all open tickets')">
+                    <span class="link-icon">📋</span>
+                    <span>Open Tickets</span>
+                </button>
+                <button class="nav-link-btn" onclick="quickAction('Show critical priority tickets')">
+                    <span class="link-icon">🚨</span>
+                    <span>Critical Issues</span>
+                </button>
+                <button class="nav-link-btn" onclick="quickAction('Show high priority tickets')">
+                    <span class="link-icon">⚠️</span>
+                    <span>High Priority</span>
+                </button>
+                <button class="nav-link-btn" onclick="quickAction('Show closed tickets')">
+                    <span class="link-icon">✅</span>
+                    <span>Closed Tickets</span>
+                </button>
             </div>
             
-            <!-- Session Metrics -->
-            <div class="sidebar-bottom">
-                <div class="stats-ribbon">
-                    <div class="stat-card">
-                        <div class="stat-num" id="queryCount">0</div>
-                        <div class="stat-sub">Queries</div>
+            <!-- Metrics Footer -->
+            <div class="sidebar-foot">
+                <div class="metric-grid">
+                    <div class="metric-cell">
+                        <div class="metric-val" id="queryCount">0</div>
+                        <div class="metric-label">Queries</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-num" id="sessionTime">0m</div>
-                        <div class="stat-sub">Session</div>
+                    <div class="metric-cell">
+                        <div class="metric-val" id="sessionTime">0m</div>
+                        <div class="metric-label">Session</div>
                     </div>
                 </div>
             </div>
         </aside>
         
         <!-- Main Workspace -->
-        <main class="workspace">
+        <main class="workspace-panel">
             <!-- Header Bar -->
-            <header class="top-navbar">
-                <div class="navbar-left">
-                    <button class="toggle-btn" id="sidebarToggle" onclick="handleSidebarToggle()" title="Toggle Sidebar">
+            <header class="workspace-header">
+                <div class="header-left-tools">
+                    <button class="icon-toggle-btn" id="sidebarToggle" onclick="handleSidebarToggle()" title="Toggle Sidebar">
                         ☰
                     </button>
                     
-                    <!-- Segmented Model Switcher -->
-                    <div class="mode-segmented-control" id="modeControl">
-                        <button class="mode-pill-btn active" id="btnModeAuto" onclick="setModelMode('auto')" title="Automatic Smart Hybrid Routing">
+                    <!-- Segmented Mode Control -->
+                    <div class="cyber-segmented-group" id="modeControl">
+                        <button class="cyber-pill active" id="btnModeAuto" onclick="setModelMode('auto')" title="Smart Hybrid Routing">
                             ⚡ Auto Hybrid
                         </button>
-                        <button class="mode-pill-btn" id="btnModeLocal" onclick="setModelMode('local')" title="Force Local Offline Gemma-2B Model">
+                        <button class="cyber-pill" id="btnModeLocal" onclick="setModelMode('local')" title="Force Local Offline Gemma-2B">
                             🏠 Local Gemma
                         </button>
-                        <button class="mode-pill-btn" id="btnModeCloud" onclick="setModelMode('cloud')" title="Force Online Gemini Cloud Model">
+                        <button class="cyber-pill" id="btnModeCloud" onclick="setModelMode('cloud')" title="Force Cloud Gemini">
                             ☁️ Cloud Gemini
                         </button>
                     </div>
                 </div>
                 
-                <div class="navbar-right">
-                    <a href="/help" class="nav-tool-btn" title="View commands and guide">
+                <div class="header-right-tools">
+                    <a href="/help" class="tool-pill-btn" title="View documentation">
                         <span>💡</span>
                         <span>Guide</span>
                     </a>
-                    <button class="nav-tool-btn" onclick="clearChat()" title="Clear conversation history">
+                    <button class="tool-pill-btn" onclick="clearChat()" title="Clear conversation history">
                         <span>🗑️</span>
                         <span>Clear</span>
                     </button>
-                    <button class="nav-tool-btn" onclick="refreshStatus()" title="Refresh connection status">
+                    <button class="tool-pill-btn" onclick="refreshStatus()" title="Refresh connection status">
                         <span>🔄</span>
                     </button>
                 </div>
             </header>
             
             <!-- Chat Feed Area -->
-            <div class="chat-feed" id="chatArea">
+            <div class="chat-scrollway" id="chatArea">
                 <!-- Welcome Card -->
-                <div class="welcome-hero" id="welcomeCard">
-                    <div class="hero-avatar-glow">⚡</div>
-                    <h2 class="hero-title">Tandion Bug Assistant</h2>
-                    <p class="hero-subtitle">
+                <div class="welcome-center" id="welcomeCard">
+                    <div class="floating-hero-avatar">⚡</div>
+                    <h2 class="hero-head-title">Tandion Bug Assistant</h2>
+                    <p class="hero-head-desc">
                         High-performance AI bug triage, ticket operations, and stack trace debugging.
                         Choose your routing engine or select an interactive prompt below to begin.
                     </p>
                     
-                    <div class="hero-cards-grid">
-                        <div class="prompt-card" onclick="quickAction('Show critical priority tickets')">
-                            <div class="prompt-card-header">
-                                <span class="prompt-card-icon">🚨</span>
-                                <span class="prompt-card-title">Critical Bug Triage</span>
+                    <div class="prompt-cards-matrix">
+                        <div class="interactive-prompt-card" onclick="quickAction('Show critical priority tickets')">
+                            <div class="card-top-row">
+                                <span class="card-gem-icon">🚨</span>
+                                <span class="card-caption">Critical Bug Triage</span>
                             </div>
-                            <div class="prompt-card-desc">Find blocking P0/Critical issues requiring immediate fix.</div>
-                            <span class="prompt-card-tag">Show critical priority tickets</span>
+                            <div class="card-explainer">Find blocking P0/Critical issues requiring immediate fix.</div>
+                            <span class="card-query-chip">Show critical priority tickets</span>
                         </div>
                         
-                        <div class="prompt-card" onclick="quickAction('@local how to debug memory leaks in Python')">
-                            <div class="prompt-card-header">
-                                <span class="prompt-card-icon">🏠</span>
-                                <span class="prompt-card-title">Local Fast Debug</span>
+                        <div class="interactive-prompt-card" onclick="quickAction('@local how to debug memory leaks in Python')">
+                            <div class="card-top-row">
+                                <span class="card-gem-icon">🏠</span>
+                                <span class="card-caption">Local Fast Debug</span>
                             </div>
-                            <div class="prompt-card-desc">Private offline CPU analysis for Python memory leak diagnosis.</div>
-                            <span class="prompt-card-tag">@local debug memory leaks</span>
+                            <div class="card-explainer">Private offline CPU analysis for Python memory leak diagnosis.</div>
+                            <span class="card-query-chip">@local debug memory leaks</span>
                         </div>
                         
-                        <div class="prompt-card" onclick="quickAction('@cloud investigate CVE-2024-3094 vulnerability')">
-                            <div class="prompt-card-header">
-                                <span class="prompt-card-icon">☁️</span>
-                                <span class="prompt-card-title">Cloud CVE & Security</span>
+                        <div class="interactive-prompt-card" onclick="quickAction('@cloud investigate CVE-2024-3094 vulnerability')">
+                            <div class="card-top-row">
+                                <span class="card-gem-icon">☁️</span>
+                                <span class="card-caption">Cloud CVE & Security</span>
                             </div>
-                            <div class="prompt-card-desc">Online deep research with live web tools and vulnerability insights.</div>
-                            <span class="prompt-card-tag">@cloud investigate CVE-2024-3094</span>
+                            <div class="card-explainer">Online deep research with live web tools and vulnerability insights.</div>
+                            <span class="card-query-chip">@cloud investigate CVE-2024-3094</span>
                         </div>
                         
-                        <div class="prompt-card" onclick="quickAction('Show all open tickets')">
-                            <div class="prompt-card-header">
-                                <span class="prompt-card-icon">📋</span>
-                                <span class="prompt-card-title">Ticket Dashboard</span>
+                        <div class="interactive-prompt-card" onclick="quickAction('Show all open tickets')">
+                            <div class="card-top-row">
+                                <span class="card-gem-icon">📋</span>
+                                <span class="card-caption">Ticket Dashboard</span>
                             </div>
-                            <div class="prompt-card-desc">Query active tickets, assignee distribution, and priority overview.</div>
-                            <span class="prompt-card-tag">Show all open tickets</span>
+                            <div class="card-explainer">Query active tickets, assignee distribution, and priority overview.</div>
+                            <span class="card-query-chip">Show all open tickets</span>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Floating Command Deck -->
-            <div class="command-deck">
-                <div class="command-deck-inner">
-                    <!-- Deck Mode Chips & Attachment Tray -->
-                    <div class="deck-mode-bar">
-                        <div class="deck-mode-chips">
-                            <span style="font-size: 11px; color: var(--text-dim); margin-right: 2px;">Mode:</span>
-                            <button class="deck-chip active" id="chipAuto" onclick="setModelMode('auto')">⚡ Auto</button>
-                            <button class="deck-chip" id="chipLocal" onclick="setModelMode('local')">🏠 @local</button>
-                            <button class="deck-chip" id="chipCloud" onclick="setModelMode('cloud')">☁️ @cloud</button>
+            <!-- Console Dock (Bottom Input) -->
+            <div class="console-dock">
+                <div class="console-dock-inner">
+                    <div class="dock-pill-bar">
+                        <div class="dock-mode-chips">
+                            <span style="font-size: 11px; color: var(--text-muted); margin-right: 2px;">Mode:</span>
+                            <button class="mode-chip-tag active" id="chipAuto" onclick="setModelMode('auto')">⚡ Auto</button>
+                            <button class="mode-chip-tag" id="chipLocal" onclick="setModelMode('local')">🏠 @local</button>
+                            <button class="mode-chip-tag" id="chipCloud" onclick="setModelMode('cloud')">☁️ @cloud</button>
                         </div>
                         
-                        <!-- Attachment indicator -->
-                        <div class="attach-tray" id="attachTray">
-                            <img id="attachThumb" class="attach-thumb" alt="Attachment Preview" />
-                            <span id="attachName" class="attach-name">Screenshot attached</span>
-                            <button type="button" class="attach-del-btn" onclick="clearPendingImage()" title="Remove attachment">✕</button>
+                        <div class="dock-tray" id="dockTray">
+                            <img id="dockThumb" class="tray-preview-img" alt="Attached Preview" />
+                            <span id="dockAttachName" class="tray-caption">Screenshot attached</span>
+                            <button type="button" class="tray-remove-btn" onclick="clearPendingImage()" title="Remove attachment">✕</button>
                         </div>
                     </div>
                     
-                    <!-- Input Box -->
-                    <div class="input-box-wrapper">
+                    <div class="cyber-input-wrapper">
                         <input 
                             type="text" 
-                            class="composer-input" 
+                            class="dock-input" 
                             id="messageInput"
                             placeholder="Ask about tickets, bugs, or code (Auto Hybrid)..."
                             onkeydown="handleKeyPress(event)"
@@ -2193,23 +2176,23 @@ HTML_TEMPLATE = """
                         />
                         <input type="file" id="imageInput" accept="image/*" style="display:none" />
                         
-                        <button class="action-button btn-attach" id="attachButton" onclick="document.getElementById('imageInput').click()" title="Attach Error Screenshot or Image">
+                        <button class="dock-action-btn btn-camera" id="attachButton" onclick="document.getElementById('imageInput').click()" title="Attach Error Screenshot">
                             📷
                         </button>
                         
-                        <button class="action-button btn-send" id="sendButton" onclick="sendMessage()">
+                        <button class="dock-action-btn btn-launch" id="sendButton" onclick="sendMessage()">
                             <span>Send</span>
                             <span>→</span>
                         </button>
                         
-                        <button class="action-button btn-stop" id="stopButton" onclick="stopResponse()">
-                            <div class="stop-square"></div>
+                        <button class="dock-action-btn btn-halt" id="stopButton" onclick="stopResponse()">
+                            <div class="halt-box"></div>
                             <span>Stop</span>
                         </button>
                     </div>
                     
-                    <div class="deck-footer-hint">
-                        Press <strong>Enter ↵</strong> to send • <strong>Shift+Enter</strong> for newline • Paste screenshots directly from clipboard
+                    <div class="dock-shortcut-caption">
+                        Press <kbd>Enter ↵</kbd> to send • <kbd>Shift+Enter</kbd> for newline • Paste screenshots directly from clipboard
                     </div>
                 </div>
             </div>
@@ -2217,7 +2200,6 @@ HTML_TEMPLATE = """
     </div>
     
     <script>
-        // Safe storage helpers with in-memory fallback for sandbox/iframe/privacy shields
         const memoryStorage = {};
         function safeGetItem(type, key) {
             try {
@@ -2249,7 +2231,6 @@ HTML_TEMPLATE = """
             delete memoryStorage[key];
         }
 
-        // Resilient markdown renderer with fallback
         function renderMarkdown(text) {
             if (!text) return '';
             if (window.marked && typeof window.marked.parse === 'function') {
@@ -2265,7 +2246,6 @@ HTML_TEMPLATE = """
             return div.innerHTML.split(String.fromCharCode(10)).join('<br>');
         }
 
-        // Global State Variables
         let conversationHistory = [];
         const chatStateKey = 'tandion_chat_state';
         const clientIdKey = 'tandion_client_id';
@@ -2280,57 +2260,46 @@ HTML_TEMPLATE = """
         let sessionStart = Date.now();
         let currentAbortController = null;
         let isGenerating = false;
-        let currentMode = 'auto'; // 'auto', 'local', 'cloud'
+        let currentMode = 'auto';
         
         let pendingImageBase64 = null;
         let pendingImageMime = null;
         let pendingImageName = null;
         let pendingImagePreviewUrl = null;
 
-        // Model Switcher Function
         function setModelMode(mode) {
             currentMode = mode;
             const input = document.getElementById('messageInput');
             
-            // Update Navbar segmented buttons
             const btnAuto = document.getElementById('btnModeAuto');
             const btnLocal = document.getElementById('btnModeLocal');
             const btnCloud = document.getElementById('btnModeCloud');
-            if (btnAuto) {
-                btnAuto.className = 'mode-pill-btn' + (mode === 'auto' ? ' active' : '');
-            }
-            if (btnLocal) {
-                btnLocal.className = 'mode-pill-btn' + (mode === 'local' ? ' active mode-local' : '');
-            }
-            if (btnCloud) {
-                btnCloud.className = 'mode-pill-btn' + (mode === 'cloud' ? ' active mode-cloud' : '');
-            }
+            if (btnAuto) btnAuto.className = 'cyber-pill' + (mode === 'auto' ? ' active' : '');
+            if (btnLocal) btnLocal.className = 'cyber-pill' + (mode === 'local' ? ' active mode-local' : '');
+            if (btnCloud) btnCloud.className = 'cyber-pill' + (mode === 'cloud' ? ' active mode-cloud' : '');
             
-            // Update Deck Chips
             const chipAuto = document.getElementById('chipAuto');
             const chipLocal = document.getElementById('chipLocal');
             const chipCloud = document.getElementById('chipCloud');
-            if (chipAuto) chipAuto.className = 'deck-chip' + (mode === 'auto' ? ' active' : '');
-            if (chipLocal) chipLocal.className = 'deck-chip' + (mode === 'local' ? ' active' : '');
-            if (chipCloud) chipCloud.className = 'deck-chip' + (mode === 'cloud' ? ' active' : '');
+            if (chipAuto) chipAuto.className = 'mode-chip-tag' + (mode === 'auto' ? ' active' : '');
+            if (chipLocal) chipLocal.className = 'mode-chip-tag' + (mode === 'local' ? ' active' : '');
+            if (chipCloud) chipCloud.className = 'mode-chip-tag' + (mode === 'cloud' ? ' active' : '');
             
-            // Update placeholder
             if (input) {
                 if (mode === 'local') {
-                    input.placeholder = 'Ask offline model (Gemma-2B)...';
+                    input.placeholder = 'Ask offline model (forces @local)...';
                 } else if (mode === 'cloud') {
-                    input.placeholder = 'Ask cloud model with tools (Gemini)...';
+                    input.placeholder = 'Ask cloud model with tools (forces @cloud)...';
                 } else {
                     input.placeholder = 'Ask about tickets, bugs, or code (Auto Hybrid)...';
                 }
             }
         }
 
-        // Sidebar Collapse / Mobile Drawer Handlers
         function handleSidebarToggle() {
-            const container = document.getElementById('appContainer');
+            const container = document.getElementById('appShell');
             if (window.innerWidth <= 768) {
-                toggleMobileSidebar(!container.classList.contains('mobile-sidebar-open'));
+                toggleMobileSidebar(!container.classList.contains('mobile-drawer-open'));
             } else {
                 container.classList.toggle('sidebar-collapsed');
                 safeSetItem('local', 'tandion_sidebar_collapsed', container.classList.contains('sidebar-collapsed') ? '1' : '0');
@@ -2338,17 +2307,16 @@ HTML_TEMPLATE = """
         }
 
         function toggleMobileSidebar(open) {
-            const container = document.getElementById('appContainer');
+            const container = document.getElementById('appShell');
             if (open) {
-                container.classList.add('mobile-sidebar-open');
+                container.classList.add('mobile-drawer-open');
             } else {
-                container.classList.remove('mobile-sidebar-open');
+                container.classList.remove('mobile-drawer-open');
             }
         }
 
-        // Restore sidebar preference on desktop
         if (window.innerWidth > 768 && safeGetItem('local', 'tandion_sidebar_collapsed') === '1') {
-            document.getElementById('appContainer').classList.add('sidebar-collapsed');
+            document.getElementById('appShell').classList.add('sidebar-collapsed');
         }
 
         function isReloadNavigation() {
@@ -2409,7 +2377,6 @@ HTML_TEMPLATE = """
             }
         }
         
-        // Session timer updater
         setInterval(() => {
             const mins = Math.floor((Date.now() - sessionStart) / 60000);
             const timeEl = document.getElementById('sessionTime');
@@ -2423,11 +2390,10 @@ HTML_TEMPLATE = """
             }
         }
 
-        // Image Attachment Handling
         function updateAttachIndicator() {
-            const tray = document.getElementById('attachTray');
-            const thumb = document.getElementById('attachThumb');
-            const nameEl = document.getElementById('attachName');
+            const tray = document.getElementById('dockTray');
+            const thumb = document.getElementById('dockThumb');
+            const nameEl = document.getElementById('dockAttachName');
             
             if (pendingImageName && pendingImagePreviewUrl) {
                 tray.classList.add('visible');
@@ -2538,10 +2504,10 @@ HTML_TEMPLATE = """
         function clearChat() {
             const chatArea = document.getElementById('chatArea');
             chatArea.innerHTML = `
-                <div class="welcome-hero" id="welcomeCard">
-                    <div class="hero-avatar-glow">⚡</div>
-                    <h2 class="hero-title">Tandion Bug Assistant</h2>
-                    <p class="hero-subtitle">
+                <div class="welcome-center" id="welcomeCard">
+                    <div class="floating-hero-avatar">⚡</div>
+                    <h2 class="hero-head-title">Tandion Bug Assistant</h2>
+                    <p class="hero-head-desc">
                         Conversation cleared. Ready for your next query or bug triage request!
                     </p>
                 </div>
@@ -2561,25 +2527,24 @@ HTML_TEMPLATE = """
                     const localDot = document.getElementById('localDot');
                     const localBadge = document.getElementById('localBadge');
                     if (data.local_available) {
-                        localDot.className = 'status-dot';
+                        localDot.className = 'radar-dot';
                         if (localBadge) localBadge.textContent = 'Gemma-2B';
                     } else if (data.local_downloading) {
-                        localDot.className = 'status-dot loading';
+                        localDot.className = 'radar-dot loading';
                         if (localBadge) localBadge.textContent = 'Loading...';
                     } else {
-                        localDot.className = 'status-dot offline';
+                        localDot.className = 'radar-dot offline';
                         if (localBadge) localBadge.textContent = 'Offline';
                     }
                     
                     const cloudDot = document.getElementById('cloudDot');
                     if (cloudDot) {
-                        cloudDot.className = 'status-dot' + (data.cloud_available ? '' : ' offline');
+                        cloudDot.className = 'radar-dot' + (data.cloud_available ? '' : ' offline');
                     }
                 })
                 .catch(err => console.log('Status refresh error:', err));
         }
 
-        // Copy Text Helper
         function copyText(str, btn) {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(str).then(() => {
@@ -2602,14 +2567,13 @@ HTML_TEMPLATE = """
             }
         }
 
-        // Enhance rendered code blocks with headers and copy buttons
         function formatCodeBlocks(container) {
             const pres = container.querySelectorAll('pre');
             pres.forEach(pre => {
-                if (pre.parentNode && pre.parentNode.classList.contains('code-block-wrapper')) return;
+                if (pre.parentNode && pre.parentNode.classList.contains('code-container-box')) return;
                 
                 const wrapper = document.createElement('div');
-                wrapper.className = 'code-block-wrapper';
+                wrapper.className = 'code-container-box';
                 
                 const code = pre.querySelector('code');
                 let lang = 'CODE';
@@ -2624,13 +2588,13 @@ HTML_TEMPLATE = """
                 }
                 
                 const header = document.createElement('div');
-                header.className = 'code-header';
+                header.className = 'code-title-bar';
                 header.innerHTML = `
                     <span>${lang}</span>
-                    <button class="copy-code-btn" type="button">📋 Copy</button>
+                    <button class="copy-terminal-btn" type="button">📋 Copy</button>
                 `;
                 
-                const copyBtn = header.querySelector('.copy-code-btn');
+                const copyBtn = header.querySelector('.copy-terminal-btn');
                 copyBtn.addEventListener('click', () => {
                     const text = code ? code.innerText : pre.innerText;
                     copyText(text, copyBtn);
@@ -2641,12 +2605,11 @@ HTML_TEMPLATE = """
                 wrapper.appendChild(pre);
             });
             
-            // Format tables in scrollable container
             const tables = container.querySelectorAll('table');
             tables.forEach(table => {
-                if (table.parentNode && table.parentNode.classList.contains('table-container')) return;
+                if (table.parentNode && table.parentNode.classList.contains('table-responsive-box')) return;
                 const tblWrap = document.createElement('div');
-                tblWrap.className = 'table-container';
+                tblWrap.className = 'table-responsive-box';
                 table.parentNode.insertBefore(tblWrap, table);
                 tblWrap.appendChild(table);
             });
@@ -2658,17 +2621,17 @@ HTML_TEMPLATE = """
             if (welcome) welcome.remove();
             
             const messageRow = document.createElement('div');
-            messageRow.className = `message-row ${isUser ? 'user' : 'assistant'}`;
+            messageRow.className = `stream-message-row ${isUser ? 'user' : 'assistant'}`;
             
             const avatar = document.createElement('div');
-            avatar.className = 'avatar-wrap';
+            avatar.className = 'msg-avatar';
             avatar.textContent = isUser ? '👤' : '⚡';
             
-            const bubbleWrapper = document.createElement('div');
-            bubbleWrapper.className = 'bubble-wrapper';
+            const contentWrap = document.createElement('div');
+            contentWrap.className = 'msg-content-wrapper';
             
             const bubble = document.createElement('div');
-            bubble.className = 'msg-bubble';
+            bubble.className = 'speech-bubble';
             
             if (isUser) {
                 if (imageUrl) {
@@ -2677,7 +2640,7 @@ HTML_TEMPLATE = """
                     img.alt = 'Uploaded screenshot';
                     img.style.maxWidth = '300px';
                     img.style.maxHeight = '240px';
-                    img.style.borderRadius = '10px';
+                    img.style.borderRadius = '12px';
                     img.style.display = 'block';
                     img.style.marginBottom = text ? '8px' : '0';
                     bubble.appendChild(img);
@@ -2692,11 +2655,11 @@ HTML_TEMPLATE = """
                 formatCodeBlocks(bubble);
             }
             
-            bubbleWrapper.appendChild(bubble);
+            contentWrap.appendChild(bubble);
             
             if (!isUser) {
                 const metaBar = document.createElement('div');
-                metaBar.className = 'msg-meta-bar';
+                metaBar.className = 'msg-action-toolbar';
                 
                 let modelLabel = 'Gemini';
                 let tagClass = 'cloud';
@@ -2713,25 +2676,25 @@ HTML_TEMPLATE = """
                 }
                 
                 metaBar.innerHTML = `
-                    <span class="model-chip ${tagClass}">
+                    <span class="origin-badge ${tagClass}">
                         ${modelIcon} ${modelLabel}
                     </span>
                     <span>${new Date().toLocaleTimeString()}</span>
-                    <button class="copy-msg-btn" type="button" title="Copy response">
+                    <button class="copy-action-btn" type="button" title="Copy response">
                         📋 Copy
                     </button>
                 `;
                 
-                const copyBtn = metaBar.querySelector('.copy-msg-btn');
+                const copyBtn = metaBar.querySelector('.copy-action-btn');
                 copyBtn.addEventListener('click', () => {
                     copyText(text, copyBtn);
                 });
                 
-                bubbleWrapper.appendChild(metaBar);
+                contentWrap.appendChild(metaBar);
             }
             
             messageRow.appendChild(avatar);
-            messageRow.appendChild(bubbleWrapper);
+            messageRow.appendChild(contentWrap);
             chatArea.appendChild(messageRow);
             chatArea.scrollTop = chatArea.scrollHeight;
         }
@@ -2744,7 +2707,6 @@ HTML_TEMPLATE = """
             let message = input.value.trim();
             if (!message && !pendingImageBase64) return;
 
-            // Apply active mode prefix automatically if not already present
             if (currentMode === 'local' && message && !message.startsWith('@local') && !message.startsWith('@cloud')) {
                 message = '@local ' + message;
             } else if (currentMode === 'cloud' && message && !message.startsWith('@cloud') && !message.startsWith('@local')) {
@@ -2763,25 +2725,22 @@ HTML_TEMPLATE = """
             clearPendingImage();
             sendBtn.disabled = true;
             
-            // Show stop button
             const stopBtn = document.getElementById('stopButton');
             stopBtn.classList.add('visible');
             isGenerating = true;
             
-            // Create abort controller
             currentAbortController = new AbortController();
             
-            // Show typing indicator
             const typingRow = document.createElement('div');
-            typingRow.className = 'message-row assistant';
+            typingRow.className = 'stream-message-row assistant';
             typingRow.id = 'typingRow';
             typingRow.innerHTML = `
-                <div class="avatar-wrap">⚡</div>
-                <div class="bubble-wrapper">
-                    <div class="typing-bubble">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
+                <div class="msg-avatar">⚡</div>
+                <div class="msg-content-wrapper">
+                    <div class="typing-wave-bubble">
+                        <div class="wave-dot"></div>
+                        <div class="wave-dot"></div>
+                        <div class="wave-dot"></div>
                     </div>
                 </div>
             `;
@@ -2840,18 +2799,18 @@ HTML_TEMPLATE = """
 
                                     if (!assistantRow) {
                                         assistantRow = document.createElement('div');
-                                        assistantRow.className = 'message-row assistant';
+                                        assistantRow.className = 'stream-message-row assistant';
 
                                         const avatar = document.createElement('div');
-                                        avatar.className = 'avatar-wrap';
+                                        avatar.className = 'msg-avatar';
                                         avatar.textContent = '⚡';
 
                                         assistantWrapper = document.createElement('div');
-                                        assistantWrapper.className = 'bubble-wrapper';
+                                        assistantWrapper.className = 'msg-content-wrapper';
 
                                         assistantBubble = document.createElement('div');
-                                        assistantBubble.className = 'msg-bubble';
-                                        assistantBubble.innerHTML = '<span class="typing-cursor"></span>';
+                                        assistantBubble.className = 'speech-bubble';
+                                        assistantBubble.innerHTML = '<span class="streaming-cursor"></span>';
 
                                         assistantWrapper.appendChild(assistantBubble);
                                         assistantRow.appendChild(avatar);
@@ -2866,17 +2825,17 @@ HTML_TEMPLATE = """
 
                                     if (!assistantRow) {
                                         assistantRow = document.createElement('div');
-                                        assistantRow.className = 'message-row assistant';
+                                        assistantRow.className = 'stream-message-row assistant';
 
                                         const avatar = document.createElement('div');
-                                        avatar.className = 'avatar-wrap';
+                                        avatar.className = 'msg-avatar';
                                         avatar.textContent = '⚡';
 
                                         assistantWrapper = document.createElement('div');
-                                        assistantWrapper.className = 'bubble-wrapper';
+                                        assistantWrapper.className = 'msg-content-wrapper';
 
                                         assistantBubble = document.createElement('div');
-                                        assistantBubble.className = 'msg-bubble';
+                                        assistantBubble.className = 'speech-bubble';
                                         assistantWrapper.appendChild(assistantBubble);
                                         assistantRow.appendChild(avatar);
                                         assistantRow.appendChild(assistantWrapper);
@@ -2884,7 +2843,7 @@ HTML_TEMPLATE = """
                                     }
 
                                     accumulatedText += event.text;
-                                    assistantBubble.innerHTML = renderMarkdown(accumulatedText) + '<span class="typing-cursor"></span>';
+                                    assistantBubble.innerHTML = renderMarkdown(accumulatedText) + '<span class="streaming-cursor"></span>';
                                     formatCodeBlocks(assistantBubble);
                                     chatArea.scrollTop = chatArea.scrollHeight;
                                 } else if (event.type === 'done') {
@@ -2892,9 +2851,9 @@ HTML_TEMPLATE = """
                                         assistantBubble.innerHTML = renderMarkdown(accumulatedText);
                                         formatCodeBlocks(assistantBubble);
 
-                                        if (assistantWrapper && !assistantWrapper.querySelector('.msg-meta-bar')) {
+                                        if (assistantWrapper && !assistantWrapper.querySelector('.msg-action-toolbar')) {
                                             const metaBar = document.createElement('div');
-                                            metaBar.className = 'msg-meta-bar';
+                                            metaBar.className = 'msg-action-toolbar';
                                             
                                             let modelLabel = 'Gemini';
                                             let tagClass = 'cloud';
@@ -2911,16 +2870,16 @@ HTML_TEMPLATE = """
                                             }
                                             
                                             metaBar.innerHTML = `
-                                                <span class="model-chip ${tagClass}">
+                                                <span class="origin-badge ${tagClass}">
                                                     ${modelIcon} ${modelLabel}
                                                 </span>
                                                 <span>${new Date().toLocaleTimeString()}</span>
-                                                <button class="copy-msg-btn" type="button" title="Copy response">
+                                                <button class="copy-action-btn" type="button" title="Copy response">
                                                     📋 Copy
                                                 </button>
                                             `;
                                             
-                                            const copyBtn = metaBar.querySelector('.copy-msg-btn');
+                                            const copyBtn = metaBar.querySelector('.copy-action-btn');
                                             copyBtn.addEventListener('click', () => {
                                                 copyText(accumulatedText, copyBtn);
                                             });
@@ -3006,7 +2965,6 @@ HTML_TEMPLATE = """
             }
         }
         
-        // Event Listeners
         const imageInputEl = document.getElementById('imageInput');
         if (imageInputEl) {
             imageInputEl.addEventListener('change', event => {
@@ -3034,7 +2992,6 @@ HTML_TEMPLATE = """
             }
         });
 
-        // Window Globals for Event Handlers
         window.sendMessage = sendMessage;
         window.handleKeyPress = handleKeyPress;
         window.quickAction = quickAction;
