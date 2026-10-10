@@ -461,11 +461,174 @@ HELP_TEMPLATE = """
             color: var(--text-muted);
         }
 
+        .section-header {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            margin: 28px 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .model-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .model-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 22px 24px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .model-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .model-card.local {
+            border-left: 4px solid var(--success);
+        }
+
+        .model-card.cloud {
+            border-left: 4px solid var(--accent);
+        }
+
+        .model-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .model-tag.local {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .model-tag.cloud {
+            background: rgba(6, 182, 212, 0.2);
+            color: #22d3ee;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        .model-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .model-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .syntax-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .syntax-box code {
+            color: #a5b4fc;
+            font-weight: 700;
+            background: rgba(99, 102, 241, 0.25);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        .cmd-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .cmd-list li {
+            padding: 6px 0;
+            color: var(--text);
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .cmd-list li code {
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .hybrid-banner {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 16px;
+            padding: 18px 22px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .hybrid-icon {
+            font-size: 26px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .hybrid-text h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #c7d2fe;
+        }
+
+        .hybrid-text p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin: 0;
+        }
+
         @media (max-width: 768px) {
             .header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 12px;
+            }
+            .model-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -478,10 +641,58 @@ HELP_TEMPLATE = """
         <div class="header">
             <div>
                 <div class="title">Help & Examples</div>
-                <div class="subtitle">Use these prompts in the chat to create, update, or search tickets.</div>
+                <div class="subtitle">Complete guide to using Local (Offline) & Online (Cloud) AI models, plus ticket management commands.</div>
             </div>
             <a class="back-btn" href="/">← Back to Chat</a>
         </div>
+
+        <div class="section-header">🤖 AI Models: How to Use Local vs Online</div>
+
+        <div class="model-grid">
+            <div class="model-card local">
+                <span class="model-tag local">🏠 Local • Offline • Gemma-2B</span>
+                <h3>Local / Offline Model</h3>
+                <p>Runs 100% locally inside the container via llama.cpp CPU inference. Zero external API keys required, private, fast, and operates completely offline.</p>
+                <div class="syntax-box">
+                    <span>Force Local Prefix:</span>
+                    <code>@local &lt;query&gt;</code>
+                </div>
+                <ul class="cmd-list">
+                    <li><code>@local how to debug memory leaks in Python</code></li>
+                    <li><code>@local explain deadlock vs race condition</code></li>
+                    <li><code>@local what causes segmentation faults in C++?</code></li>
+                    <li><code>@local show all open tickets</code></li>
+                </ul>
+            </div>
+
+            <div class="model-card cloud">
+                <span class="model-tag cloud">☁️ Cloud • Online • Gemini</span>
+                <h3>Online / Cloud Model</h3>
+                <p>Powered by Google Gemini with live tool execution, Google Search, StackOverflow issue cross-referencing, multi-modal screenshot analysis, and deep reasoning.</p>
+                <div class="syntax-box">
+                    <span>Force Cloud Prefix:</span>
+                    <code>@cloud &lt;query&gt;</code>
+                </div>
+                <ul class="cmd-list">
+                    <li><code>@cloud investigate CVE-2024-3094 vulnerability</code></li>
+                    <li><code>@cloud analyze this stack trace and suggest root causes</code></li>
+                    <li><code>@cloud find solutions for AWS RDS pool exhaustion</code></li>
+                    <li>Attach error screenshots using the 📷 camera button</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="hybrid-banner">
+            <div class="hybrid-icon">⚡</div>
+            <div class="hybrid-text">
+                <h4>Smart Automatic Routing (Default)</h4>
+                <p>
+                    If you don't prefix with <code>@local</code> or <code>@cloud</code>, Tandion automatically routes simple questions, greetings, and ticket queries to the fast Local model, and complex bug troubleshooting to Cloud Gemini. If external cloud services are ever unavailable, the system automatically falls back to your local model!
+                </p>
+            </div>
+        </div>
+
+        <div class="section-header">📋 Ticket Management Commands</div>
 
         <div class="grid">
             <div class="card">
