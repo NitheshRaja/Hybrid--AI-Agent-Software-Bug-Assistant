@@ -1482,7 +1482,7 @@ HTML_TEMPLATE = """
                             class="input-field" 
                             id="messageInput"
                             placeholder="Ask about tickets, bugs, or debugging..."
-                            onkeypress="handleKeyPress(event)"
+                            onkeydown="handleKeyPress(event)"
                         />
                         <input type="file" id="imageInput" accept="image/*" style="display:none" />
                         <div class="attach-indicator" id="attachIndicator"></div>
@@ -1508,14 +1508,68 @@ HTML_TEMPLATE = """
     </div>
     
     <script>
+        // Safe storage helpers with in-memory fallback for iframe / cross-origin / privacy environments (Brave Shields, Safari, etc.)
+        const memoryStorage = {};
+        function safeGetItem(type, key) {
+            try {
+                const storage = type === 'local' ? window.localStorage : window.sessionStorage;
+                if (storage) return storage.getItem(key);
+            } catch (e) {
+                // Storage blocked or restricted by browser
+            }
+            return memoryStorage[key] || null;
+        }
+
+        function safeSetItem(type, key, value) {
+            try {
+                const storage = type === 'local' ? window.localStorage : window.sessionStorage;
+                if (storage) {
+                    storage.setItem(key, value);
+                    return;
+                }
+            } catch (e) {
+                // Storage blocked
+            }
+            memoryStorage[key] = String(value);
+        }
+
+        function safeRemoveItem(type, key) {
+            try {
+                const storage = type === 'local' ? window.localStorage : window.sessionStorage;
+                if (storage) {
+                    storage.removeItem(key);
+                    return;
+                }
+            } catch (e) {
+                // Storage blocked
+            }
+            delete memoryStorage[key];
+        }
+
+        // Resilient markdown renderer with fallback
+        function renderMarkdown(text) {
+            if (!text) return '';
+            if (window.marked && typeof window.marked.parse === 'function') {
+                try {
+                    window.marked.setOptions({ gfm: true, breaks: true });
+                    return window.marked.parse(text);
+                } catch (e) {
+                    console.warn('Markdown parsing error:', e);
+                }
+            }
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML.replace(/\n/g, '<br>');
+        }
+
         let conversationHistory = [];
         const chatStateKey = 'tandion_chat_state';
         const clientIdKey = 'tandion_client_id';
-        let clientId = localStorage.getItem(clientIdKey);
+        let clientId = safeGetItem('local', clientIdKey);
         if (!clientId) {
             const fallbackId = 'client_' + Math.random().toString(36).slice(2);
-            clientId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : fallbackId;
-            localStorage.setItem(clientIdKey, clientId);
+            clientId = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : fallbackId;
+            safeSetItem('local', clientIdKey, clientId);
         }
         let queryCount = 0;
         let sessionStart = Date.now();
@@ -1527,38 +1581,47 @@ HTML_TEMPLATE = """
         let pendingImagePreviewUrl = null;
 
         function isReloadNavigation() {
-            const navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
-            if (navEntries && navEntries.length > 0) {
-                return navEntries[0].type === 'reload';
+            try {
+                const navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
+                if (navEntries && navEntries.length > 0) {
+                    return navEntries[0].type === 'reload';
+                }
+                return performance.navigation && performance.navigation.type === 1;
+            } catch (e) {
+                return false;
             }
-            return performance.navigation && performance.navigation.type === 1;
         }
 
         function saveChatState() {
-            const payload = {
-                conversationHistory,
-                queryCount,
-                sessionStart,
-            };
-            sessionStorage.setItem(chatStateKey, JSON.stringify(payload));
+            try {
+                const payload = {
+                    conversationHistory,
+                    queryCount,
+                    sessionStart,
+                };
+                safeSetItem('session', chatStateKey, JSON.stringify(payload));
+            } catch (e) {
+                console.warn('saveChatState error:', e);
+            }
         }
 
         function loadChatState() {
-            if (isReloadNavigation()) {
-                sessionStorage.removeItem(chatStateKey);
-                return;
-            }
-
-            const raw = sessionStorage.getItem(chatStateKey);
-            if (!raw) return;
-
             try {
+                if (isReloadNavigation()) {
+                    safeRemoveItem('session', chatStateKey);
+                    return;
+                }
+
+                const raw = safeGetItem('session', chatStateKey);
+                if (!raw) return;
+
                 const state = JSON.parse(raw);
                 conversationHistory = Array.isArray(state.conversationHistory) ? state.conversationHistory : [];
                 queryCount = Number.isFinite(state.queryCount) ? state.queryCount : 0;
                 sessionStart = Number.isFinite(state.sessionStart) ? state.sessionStart : Date.now();
 
-                document.getElementById('queryCount').textContent = queryCount;
+                const countEl = document.getElementById('queryCount');
+                if (countEl) countEl.textContent = queryCount;
 
                 const chatArea = document.getElementById('chatArea');
                 const welcome = document.getElementById('welcomeCard');
@@ -1571,18 +1634,22 @@ HTML_TEMPLATE = """
                     addMessage(msg.content || '', isUser, msg.model_used || null, msg.image_url || null);
                 });
             } catch (e) {
-                sessionStorage.removeItem(chatStateKey);
+                safeRemoveItem('session', chatStateKey);
             }
         }
         
         // Update session time
         setInterval(() => {
             const mins = Math.floor((Date.now() - sessionStart) / 60000);
-            document.getElementById('sessionTime').textContent = mins + 'm';
+            const timeEl = document.getElementById('sessionTime');
+            if (timeEl) timeEl.textContent = mins + 'm';
         }, 60000);
         
         function handleKeyPress(event) {
-            if (event.key === 'Enter') sendMessage();
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
         }
 
         function updateAttachIndicator() {
@@ -1638,7 +1705,7 @@ HTML_TEMPLATE = """
             if (!dataUrl || !dataUrl.startsWith('data:image/')) return false;
             const parts = dataUrl.split(',');
             if (parts.length < 2) return false;
-            const mimeMatch = parts[0].match(/^data:(image\/[a-zA-Z0-9.+-]+);base64$/);
+            const mimeMatch = parts[0].match(/^data:(image\\/[a-zA-Z0-9.+-]+);base64$/);
             pendingImageBase64 = parts[1] || null;
             pendingImageMime = (mimeMatch && mimeMatch[1]) ? mimeMatch[1] : 'image/png';
             pendingImagePreviewUrl = dataUrl;
@@ -1676,7 +1743,7 @@ HTML_TEMPLATE = """
             // 3) HTML path with inline data URL image
             const html = clipboard.getData && clipboard.getData('text/html');
             if (html) {
-                const dataUrlMatch = html.match(/src=["'](data:image\/[a-zA-Z0-9.+-]+;base64,[^"']+)["']/i);
+                const dataUrlMatch = html.match(/src=["'](data:image\\/[a-zA-Z0-9.+-]+;base64,[^"']+)["']/i);
                 if (dataUrlMatch && setPendingImageFromDataUrl(dataUrlMatch[1])) {
                     return true;
                 }
@@ -1774,8 +1841,7 @@ HTML_TEMPLATE = """
                     bubble.appendChild(txt);
                 }
             } else {
-                marked.setOptions({ gfm: true, breaks: true });
-                bubble.innerHTML = marked.parse(text);
+                bubble.innerHTML = renderMarkdown(text);
                 
                 // Wrap tables in scrollable container
                 const tables = bubble.querySelectorAll('table');
@@ -1952,13 +2018,11 @@ HTML_TEMPLATE = """
                                     }
 
                                     accumulatedText += event.text;
-                                    marked.setOptions({ gfm: true, breaks: true });
-                                    assistantBubble.innerHTML = marked.parse(accumulatedText) + '<span class="typing-cursor">▌</span>';
+                                    assistantBubble.innerHTML = renderMarkdown(accumulatedText) + '<span class="typing-cursor">▌</span>';
                                     chatArea.scrollTop = chatArea.scrollHeight;
                                 } else if (event.type === 'done') {
                                     if (assistantBubble) {
-                                        marked.setOptions({ gfm: true, breaks: true });
-                                        assistantBubble.innerHTML = marked.parse(accumulatedText);
+                                        assistantBubble.innerHTML = renderMarkdown(accumulatedText);
 
                                         // Wrap tables in scrollable container
                                         const tables = assistantBubble.querySelectorAll('table');
@@ -2015,6 +2079,17 @@ HTML_TEMPLATE = """
                         }
                     }
                 } else {
+                    if (!response.ok) {
+                        if (typing && typing.parentNode) typing.remove();
+                        let errMsg = `Server returned status ${response.status}`;
+                        try {
+                            const errData = await response.json();
+                            if (errData && errData.error) errMsg = errData.error;
+                        } catch (_) {}
+                        addMessage('Error: ' + errMsg, false);
+                        return;
+                    }
+
                     // Fallback to JSON response if not SSE
                     const data = await response.json();
                     if (typing && typing.parentNode) typing.remove();
@@ -2039,22 +2114,21 @@ HTML_TEMPLATE = """
                 if (typing && typing.parentNode) typing.remove();
                 if (error.name === 'AbortError') {
                     if (assistantBubble) {
-                        marked.setOptions({ gfm: true, breaks: true });
-                        assistantBubble.innerHTML = marked.parse(accumulatedText) + ' *(stopped)*';
+                        assistantBubble.innerHTML = renderMarkdown(accumulatedText) + ' *(stopped)*';
                     } else {
                         addMessage('⏹️ Response stopped by user.', false);
                     }
                 } else {
                     addMessage('Connection error. Please try again: ' + error.message, false);
                 }
+            } finally {
+                // Hide stop button and reset state unconditionally
+                stopBtn.classList.remove('visible');
+                isGenerating = false;
+                currentAbortController = null;
+                sendBtn.disabled = false;
+                input.focus();
             }
-            
-            // Hide stop button and reset state
-            stopBtn.classList.remove('visible');
-            isGenerating = false;
-            currentAbortController = null;
-            sendBtn.disabled = false;
-            input.focus();
         }
         
         function stopResponse() {
@@ -2065,18 +2139,25 @@ HTML_TEMPLATE = """
             }
         }
         
-        // Initial status check
-        document.getElementById('imageInput').addEventListener('change', event => {
-            const file = event.target.files && event.target.files[0];
-            if (!file) return;
-            setPendingImageFromFile(file, 'Attached image');
-        });
+        // Initial setup and event listeners
+        const imageInputEl = document.getElementById('imageInput');
+        if (imageInputEl) {
+            imageInputEl.addEventListener('change', event => {
+                const file = event.target.files && event.target.files[0];
+                if (!file) return;
+                setPendingImageFromFile(file, 'Attached image');
+            });
+        }
 
-        document.getElementById('messageInput').addEventListener('paste', event => {
-            if (tryExtractImageFromClipboard(event)) {
-                event.preventDefault();
-            }
-        });
+        const msgInputEl = document.getElementById('messageInput');
+        if (msgInputEl) {
+            msgInputEl.addEventListener('keydown', handleKeyPress);
+            msgInputEl.addEventListener('paste', event => {
+                if (tryExtractImageFromClipboard(event)) {
+                    event.preventDefault();
+                }
+            });
+        }
 
         // Support paste when focus is outside the input (common with screenshots / copy as image).
         document.addEventListener('paste', event => {
@@ -2086,6 +2167,14 @@ HTML_TEMPLATE = """
                 event.preventDefault();
             }
         });
+
+        // Expose functions to window for inline onclick/onkeydown handlers
+        window.sendMessage = sendMessage;
+        window.handleKeyPress = handleKeyPress;
+        window.quickAction = quickAction;
+        window.clearChat = clearChat;
+        window.stopResponse = stopResponse;
+        window.clearPendingImage = clearPendingImage;
 
         loadChatState();
         refreshStatus();
