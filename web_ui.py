@@ -26,7 +26,7 @@ os.environ.setdefault("SKIP_AGENT_IMPORT", "TRUE")
 # Add project to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask, render_template_string, request, jsonify, stream_with_context, Response
+from flask import Flask, render_template_string, request, jsonify, stream_with_context, Response, make_response
 
 from software_bug_assistant.tools.local_tools import (
     backfill_missing_embeddings,
@@ -1559,7 +1559,7 @@ HTML_TEMPLATE = """
             }
             const div = document.createElement('div');
             div.textContent = text;
-            return div.innerHTML.replace(/\n/g, '<br>');
+            return div.innerHTML.split(String.fromCharCode(10)).join('<br>');
         }
 
         let conversationHistory = [];
@@ -1705,9 +1705,13 @@ HTML_TEMPLATE = """
             if (!dataUrl || !dataUrl.startsWith('data:image/')) return false;
             const parts = dataUrl.split(',');
             if (parts.length < 2) return false;
-            const mimeMatch = parts[0].match(/^data:(image\\/[a-zA-Z0-9.+-]+);base64$/);
+            let mime = 'image/png';
+            try {
+                const header = parts[0].split(':')[1] || '';
+                mime = header.split(';')[0] || 'image/png';
+            } catch (e) {}
             pendingImageBase64 = parts[1] || null;
-            pendingImageMime = (mimeMatch && mimeMatch[1]) ? mimeMatch[1] : 'image/png';
+            pendingImageMime = mime;
             pendingImagePreviewUrl = dataUrl;
             pendingImageName = label;
             updateAttachIndicator();
@@ -1743,7 +1747,7 @@ HTML_TEMPLATE = """
             // 3) HTML path with inline data URL image
             const html = clipboard.getData && clipboard.getData('text/html');
             if (html) {
-                const dataUrlMatch = html.match(/src=["'](data:image\\/[a-zA-Z0-9.+-]+;base64,[^"']+)["']/i);
+                const dataUrlMatch = html.match(/src=["'](data:image[^"']+)["']/i);
                 if (dataUrlMatch && setPendingImageFromDataUrl(dataUrlMatch[1])) {
                     return true;
                 }
@@ -2187,13 +2191,21 @@ HTML_TEMPLATE = """
 @app.route('/')
 def index():
     """Serve the main UI"""
-    return render_template_string(HTML_TEMPLATE)
+    resp = make_response(render_template_string(HTML_TEMPLATE))
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 
 @app.route('/help')
 def help_page():
     """Serve the help/examples page"""
-    return render_template_string(HELP_TEMPLATE)
+    resp = make_response(render_template_string(HELP_TEMPLATE))
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 
 def init_agents():
