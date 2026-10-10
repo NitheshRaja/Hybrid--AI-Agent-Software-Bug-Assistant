@@ -189,7 +189,13 @@ def query_database_directly(query: str) -> Optional[str]:
                         values.append(val)
                     md_table += "| " + " | ".join(values) + " |\n"
             
-            return f"📋 **Database Results:**\n\n{md_table}\n\n_Found {len(tickets)} ticket(s)._"
+            output = f"📋 **Database Results:**\n\n{md_table}\n\n_Found {len(tickets)} ticket(s)._"
+            if result.get('is_fallback'):
+                output += (
+                    "\n\n---\n> 💡 **Notice:** Remote Supabase database is unreachable (`FATAL: tenant/user not found` — project may be paused).\n"
+                    "> Loaded tickets from local database fallback. To connect live Supabase, resume your project in your [Supabase Dashboard](https://supabase.com/dashboard)."
+                )
+            return output
         elif isinstance(tickets, list) and len(tickets) == 0:
             return "No tickets found matching your query."
         else:

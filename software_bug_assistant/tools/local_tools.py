@@ -3086,7 +3086,11 @@ Be specific, practical, and helpful. Format your response clearly with numbered 
                     assignee = ticket.get('assignee', 'Unassigned')
                     if '@' in str(assignee):
                         assignee = assignee.split('@')[0]
-                    response_parts.append(f"| {tid} | {title} | {status} | {priority} | {assignee} |")
+            if result.get('is_fallback'):
+                response_parts.append(
+                    "\n---\n> 💡 **Notice:** Remote Supabase database is unreachable (`FATAL: tenant/user not found` — project may be paused).\n"
+                    "> Loaded tickets from local database fallback. To connect live Supabase, resume your project in your [Supabase Dashboard](https://supabase.com/dashboard)."
+                )
             return "\n".join(response_parts)
         
         # No tickets found
